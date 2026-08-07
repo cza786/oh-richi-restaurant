@@ -1,0 +1,2567 @@
+/* Customer storefront — scoped to keep the management dashboard unchanged. */
+.richi-customer-shell {
+  --richi-bg: #060707;
+  --richi-surface: #0e1010;
+  --richi-surface-2: #151717;
+  --richi-border: #292b2c;
+  --richi-text: #f7f6f2;
+  --richi-muted: #929596;
+  --richi-orange: #ff9f0a;
+  --richi-orange-2: #ff6a00;
+  --richi-green: #78c043;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 62% 8%, rgba(255, 125, 0, .055), transparent 27rem),
+    var(--richi-bg);
+  color: var(--richi-text);
+  font-family: var(--font-body), Inter, Arial, sans-serif;
+  isolation: isolate;
+}
+
+.richi-customer-shell button,
+.richi-customer-shell input,
+.richi-customer-shell textarea {
+  font: inherit;
+}
+
+.richi-customer-shell button,
+.richi-customer-shell a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.richi-customer-main { min-height: calc(100vh - 68px); }
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.richi-header {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  height: 68px;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+  background: rgba(6, 7, 7, .86);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .22);
+  backdrop-filter: blur(18px);
+}
+
+.richi-nav-wrap {
+  width: min(100% - 40px, 1460px);
+  height: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 28px;
+}
+
+.richi-logo {
+  width: max-content;
+  color: #fff;
+  font-family: var(--font-brand), cursive;
+  font-size: 22px;
+  line-height: 1;
+  text-decoration: none;
+  letter-spacing: -.055em;
+  transform: rotate(-2deg);
+}
+
+.richi-logo span,
+.richi-logo i { color: var(--richi-orange); }
+.richi-logo i { font-style: normal; }
+
+.richi-desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.richi-desktop-nav a {
+  position: relative;
+  color: #b8b9b7;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color .2s ease;
+}
+
+.richi-desktop-nav a:hover,
+.richi-desktop-nav a.active { color: var(--richi-orange); }
+.richi-desktop-nav a.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--richi-orange);
+  transform: translateX(-50%);
+}
+
+.richi-nav-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.richi-nav-icon,
+.richi-cart-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e9e9e7;
+  cursor: pointer;
+}
+
+.richi-nav-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+}
+
+.richi-nav-icon:hover { border-color: var(--richi-border); background: #111313; }
+.richi-nav-icon svg,
+.richi-cart-trigger svg { width: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.richi-login-link {
+  padding: 9px 19px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--richi-orange), var(--richi-orange-2));
+  color: #160b00;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 7px 22px rgba(255, 128, 0, .18);
+}
+
+.richi-cart-trigger {
+  min-width: 42px;
+  height: 38px;
+  grid-auto-flow: column;
+  gap: 7px;
+  padding: 0 11px;
+  border-color: var(--richi-border);
+  border-radius: 9px;
+  background: #111313;
+}
+.richi-cart-label { font-size: 11px; font-weight: 700; }
+.richi-cart-trigger b {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid var(--richi-bg);
+  border-radius: 9px;
+  background: #ed3b31;
+  color: #fff;
+  font-size: 9px;
+}
+
+.richi-profile-wrap { position: relative; }
+.richi-user-initial {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffbe3e, #ff6900);
+  color: #1d0c00;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.richi-dropdown-shade { position: fixed; inset: 0; z-index: 1; border: 0; background: transparent; }
+.richi-profile-menu {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 220px;
+  padding: 8px;
+  border: 1px solid var(--richi-border);
+  border-radius: 12px;
+  background: #121414;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .6);
+}
+.richi-profile-menu > div { padding: 11px 12px 13px; border-bottom: 1px solid var(--richi-border); }
+.richi-profile-menu strong,
+.richi-profile-menu small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.richi-profile-menu strong { font-size: 13px; }
+.richi-profile-menu small { margin-top: 3px; color: var(--richi-muted); font-size: 10px; }
+.richi-profile-menu a,
+.richi-profile-menu > button { display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: 7px; background: none; color: #d8d8d5; font-size: 12px; text-align: left; text-decoration: none; cursor: pointer; }
+.richi-profile-menu a:hover,
+.richi-profile-menu > button:hover { background: #1b1d1d; color: var(--richi-orange); }
+
+.richi-mobile-tabs { display: none; }
+
+.richi-storefront {
+  width: min(100% - 28px, 1460px);
+  margin: 0 auto;
+  padding: 18px 0 72px;
+}
+
+.richi-home-grid {
+  display: grid;
+  grid-template-columns: 212px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.richi-home-main {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--richi-border);
+  border-radius: 18px;
+  background: #090a0a;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .38);
+}
+
+.richi-promo-rail { display: grid; align-content: start; gap: 12px; }
+.richi-promo-card {
+  position: relative;
+  min-height: 156px;
+  overflow: hidden;
+  padding: 17px 15px;
+  border: 1px solid var(--richi-border);
+  border-radius: 12px;
+  background: linear-gradient(145deg, #101212, #0b0c0c);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .025), 0 12px 30px rgba(0, 0, 0, .22);
+}
+.richi-promo-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -30px -50px 20px;
+  height: 105px;
+  background: radial-gradient(ellipse, rgba(255, 139, 0, .18), transparent 66%);
+  pointer-events: none;
+}
+.richi-micro-label,
+.richi-kicker {
+  display: block;
+  color: var(--richi-orange);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+.richi-promo-card h2 { margin: 8px 0 5px; font: 700 14px/1.22 var(--font-body), sans-serif; }
+.richi-promo-card p,
+.richi-promo-card > span:not(.richi-micro-label) { position: relative; z-index: 2; color: #d3d3d0; font-size: 10px; line-height: 1.45; }
+.richi-promo-card button,
+.richi-promo-card > a {
+  position: absolute;
+  z-index: 3;
+  left: 15px;
+  bottom: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 27px;
+  padding: 0 10px;
+  border: 1px solid #555;
+  border-radius: 5px;
+  background: #131515;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+.richi-family-card { min-height: 165px; }
+.richi-family-card button { border: 0; background: linear-gradient(135deg, #ffb116, #ff7800); color: #1b0c00; }
+.richi-family-card img,
+.richi-loyalty-card img {
+  position: absolute;
+  z-index: 1;
+  right: -17px;
+  bottom: -12px;
+  width: 125px;
+  height: 125px;
+  object-fit: cover;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  filter: saturate(1.15) contrast(1.08);
+  pointer-events: none;
+}
+.richi-promo-price { position: relative; z-index: 3; display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.richi-promo-price strong { color: var(--richi-orange); font-size: 14px; }
+.richi-promo-price del { color: #777; font-size: 8px; }
+.richi-loyalty-card { min-height: 165px; }
+.richi-loyalty-card .richi-points { position: relative; z-index: 2; display: block; color: var(--richi-orange); font-size: 22px; line-height: 1.1; }
+.richi-loyalty-card img { right: -26px; bottom: 7px; width: 116px; height: 116px; opacity: .78; }
+.richi-points-track { position: relative; z-index: 3; width: 104px; height: 4px; margin: 8px 0 4px; overflow: hidden; border-radius: 2px; background: #303232; }
+.richi-points-track span { display: block; width: 78%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ffc21b, #ff7800); }
+.richi-loyalty-card small { position: relative; z-index: 3; color: #8b8c89; font-size: 7px; }
+.richi-booking-card {
+  min-height: 146px;
+  background:
+    linear-gradient(90deg, rgba(10, 11, 11, .97), rgba(10, 11, 11, .68)),
+    radial-gradient(circle at 80% 20%, #3a2411, transparent 65%);
+}
+.richi-booking-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 10px; }
+.richi-booking-fields span { padding: 5px; border: 1px solid #282a2a; border-radius: 4px; background: #151717; color: #b9bab7; font-size: 7px; }
+.richi-booking-fields span:last-child { grid-column: 1 / -1; }
+.richi-booking-card > a { border: 0; background: linear-gradient(135deg, #ffb719, #ff8000); color: #1a0c00; }
+
+.richi-hero {
+  position: relative;
+  min-height: 410px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 48% 52%;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 77% 49%, rgba(255, 109, 0, .15), transparent 32%),
+    linear-gradient(110deg, #090a0a 0%, #090a0a 48%, #0b0907 100%);
+}
+.richi-hero::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  inset: auto 0 0;
+  height: 50px;
+  background: linear-gradient(transparent, #090a0a);
+  pointer-events: none;
+}
+.richi-hero-glow { position: absolute; z-index: -1; right: 4%; bottom: 5%; width: 52%; height: 30%; background: radial-gradient(ellipse, rgba(255, 130, 0, .29), transparent 67%); filter: blur(20px); }
+.richi-hero-copy {
+  position: relative;
+  z-index: 5;
+  align-self: center;
+  padding: 48px 0 45px 46px;
+}
+.richi-fresh-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 158, 10, .22);
+  border-radius: 4px;
+  background: rgba(255, 158, 10, .08);
+  color: #ffbd32;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.richi-hero h1 {
+  margin: 16px 0 9px;
+  color: #f7f7f4;
+  font-family: Arial Black, var(--font-body), sans-serif;
+  font-size: clamp(40px, 4.5vw, 67px);
+  font-weight: 950;
+  line-height: .91;
+  letter-spacing: -.065em;
+  text-transform: uppercase;
+}
+.richi-hero h1 em {
+  display: inline-block;
+  color: #ff8400;
+  font-style: normal;
+  letter-spacing: -.075em;
+  background: linear-gradient(180deg, #ffb21b 7%, #ff6900 88%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.richi-review-row { display: flex; align-items: center; gap: 8px; }
+.richi-review-row span { color: #ffb000; font-size: 11px; letter-spacing: 1px; }
+.richi-review-row small { color: #a3a5a1; font-size: 8px; }
+.richi-hero-copy > p { width: min(100%, 315px); margin-top: 15px; color: #aaa; font-size: 11px; line-height: 1.65; }
+.richi-hero-actions { display: flex; gap: 9px; margin-top: 21px; }
+.richi-hero-actions button { height: 38px; padding: 0 18px; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer; }
+.richi-primary-action { display: flex; align-items: center; gap: 8px; border: 0; background: linear-gradient(135deg, #ffb31a, #ff7300); color: #190c00; box-shadow: 0 9px 25px rgba(255, 124, 0, .19); }
+.richi-primary-action svg,
+.richi-section-heading button svg { width: 13px; fill: none; stroke: currentColor; stroke-width: 2; }
+.richi-secondary-action { border: 1px solid #3c3e3e; background: rgba(13, 15, 15, .84); color: #e8e8e5; }
+.richi-hero-art { position: relative; z-index: 2; min-width: 0; }
+.richi-hero-art > img {
+  position: absolute;
+  top: 50%;
+  left: 48%;
+  width: min(570px, 58vw);
+  max-width: none;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  transform: translate(-50%, -48%);
+  filter: saturate(1.13) contrast(1.08) drop-shadow(0 22px 30px #000);
+  mix-blend-mode: screen;
+}
+.richi-beef-seal {
+  position: absolute;
+  z-index: 4;
+  right: 5.5%;
+  top: 45%;
+  display: grid;
+  place-content: center;
+  width: 67px;
+  height: 67px;
+  border: 2px solid #9a6b28;
+  outline: 1px dashed #8d652c;
+  outline-offset: 4px;
+  border-radius: 50%;
+  background: rgba(18, 15, 9, .9);
+  color: #f0b950;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(5deg);
+}
+.richi-beef-seal b { font-size: 15px; line-height: 1; }
+.richi-beef-seal span { font-size: 5px; letter-spacing: .13em; }
+.richi-beef-seal strong { font-size: 9px; }
+.richi-chilli { position: absolute; z-index: 5; top: 17%; right: 9%; font-size: 22px; transform: rotate(22deg); filter: drop-shadow(0 4px 5px #000); }
+.richi-spark { position: absolute; z-index: 4; color: #ff8300; text-shadow: 0 0 10px #ff6d00; }
+.richi-spark-one { right: 27%; top: 12%; font-size: 9px; }
+.richi-spark-two { right: 34%; top: 22%; font-size: 17px; }
+
+.richi-category-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 52px;
+  padding: 0 25px;
+  overflow-x: auto;
+  border-top: 1px solid #1c1e1e;
+  border-bottom: 1px solid #1c1e1e;
+  background: #0e1010;
+  scrollbar-width: none;
+}
+.richi-category-bar::-webkit-scrollbar { display: none; }
+.richi-category-bar button {
+  flex: 0 0 auto;
+  height: 52px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #a4a6a2;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.richi-category-bar button span { margin-right: 7px; }
+.richi-category-bar button:hover,
+.richi-category-bar button.active { border-bottom-color: var(--richi-orange); color: #fff; background: rgba(255, 158, 10, .035); }
+.richi-featured { padding: 20px 22px 13px; }
+.richi-section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+.richi-section-heading > div { display: flex; align-items: center; gap: 7px; }
+.richi-section-heading h2 { font: 750 14px/1.2 var(--font-body), sans-serif; letter-spacing: 0; }
+.richi-section-heading > div > span { font-size: 13px; }
+.richi-section-heading > button { display: flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--richi-orange); font-size: 8px; font-weight: 800; cursor: pointer; }
+.richi-featured-layout { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 11px; }
+.richi-featured-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+
+.richi-product-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #242626;
+  border-radius: 11px;
+  background: #111313;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .018);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.richi-product-card:hover { transform: translateY(-3px); border-color: #3a3c3c; box-shadow: 0 15px 35px rgba(0, 0, 0, .32); }
+.richi-product-visual {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.4;
+  overflow: hidden;
+  border: 0;
+  background: radial-gradient(circle at 50% 70%, #35200c, #090a0a 67%);
+  cursor: pointer;
+}
+.richi-product-visual::after { content: ''; position: absolute; inset: auto 0 0; height: 30%; background: linear-gradient(transparent, #111313); }
+.richi-product-visual img { width: 100%; height: 100%; object-fit: cover; filter: saturate(1.1) contrast(1.08); transform: scale(1.12); mix-blend-mode: screen; transition: transform .3s ease; }
+.richi-product-card:hover .richi-product-visual img { transform: scale(1.18); }
+.richi-product-badge { position: absolute; z-index: 2; top: 8px; left: 8px; padding: 3px 6px; border: 1px solid rgba(255, 169, 26, .23); border-radius: 4px; background: rgba(18, 13, 6, .78); color: #ffad1b; font-size: 6px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; backdrop-filter: blur(5px); }
+.richi-product-emoji { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; height: 100%; font-size: 54px; filter: drop-shadow(0 12px 10px #000); }
+.richi-product-copy { padding: 10px 11px 11px; }
+.richi-product-heading { display: flex; align-items: start; justify-content: space-between; gap: 6px; }
+.richi-product-heading h3 { min-width: 0; color: #f2f2ef; font: 750 11px/1.25 var(--font-body), sans-serif; letter-spacing: -.015em; }
+.richi-rating { flex: 0 0 auto; color: #a2a39f; font-size: 7px; }
+.richi-rating b { color: #ffad0a; }
+.richi-product-copy > p { height: 34px; margin-top: 5px; overflow: hidden; color: #8e908d; font-size: 8px; line-height: 1.45; }
+.richi-product-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 9px; }
+.richi-product-footer > strong { color: var(--richi-orange); font-size: 12px; }
+.richi-product-footer > button { display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px; border: 0; border-radius: 5px; background: linear-gradient(135deg, #ffb21b, #ff7800); color: #1a0b00; font-size: 7px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+.richi-product-footer > button span { display: grid; place-items: center; width: 12px; height: 12px; border-radius: 3px; background: rgba(0, 0, 0, .12); font-size: 10px; }
+.richi-product-card.is-compact .richi-product-visual { aspect-ratio: 1.16; }
+.richi-product-card.is-compact .richi-product-copy { padding: 8px; }
+.richi-product-card.is-compact .richi-product-heading h3 { font-size: 9px; }
+.richi-product-card.is-compact .richi-product-footer { margin-top: 6px; }
+.richi-product-card.is-compact .richi-product-footer > strong { font-size: 10px; }
+.richi-product-card.is-compact .richi-product-footer > button { height: 22px; padding: 0 6px; font-size: 6px; }
+
+.richi-meal-deal {
+  position: relative;
+  min-height: 166px;
+  overflow: hidden;
+  border: 1px solid #292b2b;
+  border-radius: 10px;
+  background: radial-gradient(circle at 78% 68%, #38200a, transparent 44%), linear-gradient(135deg, #111313, #0b0c0c);
+}
+.richi-meal-copy { position: relative; z-index: 3; width: 57%; padding: 14px 0 12px 14px; }
+.richi-meal-copy > span { color: var(--richi-orange); font-size: 6px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.richi-meal-copy h3 { margin: 4px 0; font: 750 11px/1.25 var(--font-body), sans-serif; }
+.richi-meal-copy p { color: #969895; font-size: 7px; line-height: 1.4; }
+.richi-meal-copy > div { display: flex; align-items: center; gap: 5px; margin-top: 9px; }
+.richi-meal-copy strong { color: var(--richi-orange); font-size: 13px; }
+.richi-meal-copy del { color: #676967; font-size: 7px; }
+.richi-meal-copy button { height: 25px; margin-top: 9px; padding: 0 10px; border: 0; border-radius: 4px; background: linear-gradient(135deg, #ffb218, #ff7d00); color: #180b00; font-size: 7px; font-weight: 900; cursor: pointer; }
+.richi-meal-deal img { position: absolute; z-index: 1; right: -43px; bottom: -33px; width: 184px; height: 184px; object-fit: cover; border-radius: 50%; mix-blend-mode: screen; filter: contrast(1.1) saturate(1.15); }
+
+.richi-proof-strip { display: grid; grid-template-columns: 1.8fr repeat(3, 1fr); align-items: center; min-height: 74px; padding: 13px 22px; border-top: 1px solid #1d1f1f; background: #0b0c0c; }
+.richi-review-quote { display: flex; align-items: center; gap: 10px; padding-right: 18px; }
+.richi-avatar { flex: 0 0 auto; display: grid; place-items: center; width: 33px; height: 33px; border: 2px solid #bc7d1f; border-radius: 50%; background: linear-gradient(145deg, #d7aa75, #694528); color: #fff; font-size: 11px; font-weight: 900; }
+.richi-review-quote strong { display: block; font-size: 8px; }
+.richi-review-quote p { margin-top: 2px; color: #a1a29f; font-size: 6.5px; line-height: 1.4; }
+.richi-review-quote small { color: #e2e2df; font-size: 6px; }
+.richi-benefit { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 10px; border-left: 1px solid #242626; }
+.richi-benefit > span { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid #8f6123; border-radius: 50%; color: var(--richi-orange); font-size: 11px; }
+.richi-benefit strong,
+.richi-benefit small { display: block; }
+.richi-benefit strong { font-size: 7px; }
+.richi-benefit small { margin-top: 2px; color: #878986; font-size: 6px; }
+
+.richi-menu-section {
+  scroll-margin-top: 82px;
+  margin-top: 20px;
+  padding: clamp(24px, 4vw, 48px);
+  border: 1px solid var(--richi-border);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #0d0f0f, #090a0a);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, .26);
+}
+.richi-menu-header { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+.richi-menu-header h2 { margin: 5px 0 3px; font: 850 clamp(25px, 3vw, 38px)/1 var(--font-body), sans-serif; letter-spacing: -.045em; }
+.richi-menu-header p { color: var(--richi-muted); font-size: 11px; }
+.richi-search-box { display: flex; align-items: center; width: min(100%, 360px); height: 43px; padding: 0 12px; border: 1px solid #2b2d2d; border-radius: 8px; background: #141616; transition: border-color .2s ease, box-shadow .2s ease; }
+.richi-search-box:focus-within { border-color: rgba(255, 158, 10, .65); box-shadow: 0 0 0 3px rgba(255, 158, 10, .08); }
+.richi-search-box svg { flex: 0 0 auto; width: 17px; fill: none; stroke: #858784; stroke-width: 1.8; }
+.richi-search-box input { min-width: 0; flex: 1; height: 100%; padding: 0 10px; border: 0; outline: 0; background: transparent; color: #f4f4f1; font-size: 11px; }
+.richi-search-box input::placeholder { color: #6f716f; }
+.richi-search-box > button { width: 24px; height: 24px; border: 0; border-radius: 50%; background: #242626; color: #bdbebb; cursor: pointer; }
+.richi-menu-chips { display: flex; gap: 7px; margin-bottom: 22px; overflow-x: auto; scrollbar-width: none; }
+.richi-menu-chips::-webkit-scrollbar { display: none; }
+.richi-menu-chips button { flex: 0 0 auto; height: 33px; padding: 0 13px; border: 1px solid #2b2d2d; border-radius: 17px; background: #151717; color: #a8aaa7; font-size: 9px; font-weight: 700; cursor: pointer; }
+.richi-menu-chips button span { margin-right: 6px; }
+.richi-menu-chips button:hover,
+.richi-menu-chips button.active { border-color: var(--richi-orange); background: var(--richi-orange); color: #1a0c00; }
+.richi-menu-notice { margin: -10px 0 18px; color: #7f817e; font-size: 9px; }
+.richi-menu-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.richi-menu-grid .richi-product-visual { aspect-ratio: 1.45; }
+.richi-menu-grid .richi-product-copy { padding: 13px; }
+.richi-menu-grid .richi-product-heading h3 { font-size: 13px; }
+.richi-menu-grid .richi-product-copy > p { height: 40px; font-size: 9px; }
+.richi-menu-grid .richi-product-footer > strong { font-size: 14px; }
+.richi-menu-grid .richi-product-footer > button { height: 30px; padding: 0 10px; font-size: 8px; }
+.richi-product-skeleton { aspect-ratio: .82; border: 1px solid #222; border-radius: 11px; background: linear-gradient(100deg, #101212 20%, #1b1d1d 40%, #101212 60%); background-size: 240% 100%; animation: richi-shimmer 1.4s infinite; }
+@keyframes richi-shimmer { to { background-position: -240% 0; } }
+.richi-empty-menu { display: grid; justify-items: center; padding: 65px 20px; color: var(--richi-muted); text-align: center; }
+.richi-empty-menu > span { font-size: 38px; filter: grayscale(1); }
+.richi-empty-menu h3 { margin-top: 12px; color: var(--richi-text); font-size: 18px; }
+.richi-empty-menu p { margin: 5px 0 16px; font-size: 11px; }
+.richi-empty-menu button { height: 36px; padding: 0 16px; border: 0; border-radius: 6px; background: var(--richi-orange); color: #1a0c00; font-size: 10px; font-weight: 800; cursor: pointer; }
+.richi-toast { position: fixed; z-index: 160; left: 50%; bottom: 28px; display: flex; align-items: center; gap: 9px; padding: 11px 16px; border: 1px solid #354331; border-radius: 9px; background: #172016; color: #e8f5e4; box-shadow: 0 18px 45px rgba(0, 0, 0, .55); font-size: 11px; font-weight: 700; transform: translateX(-50%); animation: richi-toast-in .25s ease both; }
+.richi-toast span { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #6aaf3d; color: #0d1709; }
+@keyframes richi-toast-in { from { opacity: 0; transform: translate(-50%, 12px); } }
+.richi-modal-backdrop {
+  position: fixed;
+  z-index: 150;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .78);
+  backdrop-filter: blur(9px);
+  animation: richi-fade .2s ease both;
+}
+@keyframes richi-fade { from { opacity: 0; } }
+.richi-customizer {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42% 58%;
+  width: min(880px, 100%);
+  max-height: min(780px, calc(100vh - 40px));
+  overflow: hidden;
+  border: 1px solid #353737;
+  border-radius: 18px;
+  background: #111313;
+  box-shadow: 0 35px 100px rgba(0, 0, 0, .75);
+  animation: richi-modal-in .24s ease both;
+}
+@keyframes richi-modal-in { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+.richi-modal-close {
+  position: absolute;
+  z-index: 4;
+  top: 13px;
+  right: 13px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #363838;
+  border-radius: 50%;
+  background: rgba(10, 11, 11, .78);
+  color: #dededb;
+  font-size: 21px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+.richi-customizer-art { position: relative; overflow: hidden; background: radial-gradient(circle at 50% 55%, #45260b, #080909 68%); }
+.richi-customizer-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 65%, #111313), linear-gradient(transparent 72%, #111313); pointer-events: none; }
+.richi-customizer-art img { width: 100%; height: 100%; min-height: 520px; object-fit: cover; mix-blend-mode: screen; filter: saturate(1.13) contrast(1.08); }
+.richi-customizer-art > span { position: absolute; z-index: 2; left: 20px; bottom: 20px; padding: 6px 9px; border: 1px solid rgba(255, 167, 20, .25); border-radius: 5px; background: rgba(15, 12, 8, .72); color: #ffb223; font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.richi-customizer-body { min-width: 0; overflow-y: auto; padding: 38px 38px 30px; }
+.richi-customizer-body > h2 { margin: 6px 0; color: #f5f5f2; font: 850 29px/1.08 var(--font-body), sans-serif; letter-spacing: -.045em; }
+.richi-customizer-description { color: #989a97; font-size: 10px; line-height: 1.55; }
+.richi-option-group { margin-top: 23px; padding: 0; border: 0; }
+.richi-option-group legend { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: #e7e7e4; font-size: 11px; font-weight: 800; }
+.richi-option-group legend > span { display: grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: rgba(255, 158, 10, .13); color: var(--richi-orange); font-size: 8px; }
+.richi-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.richi-choice-grid button { display: flex; align-items: center; justify-content: space-between; gap: 9px; min-height: 42px; padding: 9px 11px; border: 1px solid #303232; border-radius: 7px; background: #171919; color: #c2c3c0; font-size: 9px; text-align: left; cursor: pointer; }
+.richi-choice-grid button small { color: #858784; font-size: 7px; }
+.richi-choice-grid button:hover,
+.richi-choice-grid button.active { border-color: var(--richi-orange); background: rgba(255, 158, 10, .075); color: #fff; }
+.richi-choice-grid button.active small { color: var(--richi-orange); }
+.richi-addon-list { display: grid; gap: 6px; }
+.richi-addon-list button { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; min-height: 40px; padding: 7px 10px; border: 1px solid #303232; border-radius: 7px; background: #171919; color: #b7b8b5; font-size: 9px; text-align: left; cursor: pointer; }
+.richi-addon-list i { display: grid; place-items: center; width: 19px; height: 19px; border: 1px solid #484a49; border-radius: 5px; color: #999; font-style: normal; }
+.richi-addon-list strong { color: var(--richi-orange); font-size: 8px; }
+.richi-addon-list button.active { border-color: rgba(255, 158, 10, .65); background: rgba(255, 158, 10, .065); color: #fff; }
+.richi-addon-list button.active i { border-color: var(--richi-orange); background: var(--richi-orange); color: #160b00; }
+.richi-notes-field { display: block; margin-top: 21px; }
+.richi-notes-field > span { display: flex; justify-content: space-between; margin-bottom: 8px; color: #e7e7e4; font-size: 10px; font-weight: 800; }
+.richi-notes-field small { color: #777976; font-size: 7px; font-weight: 500; text-transform: uppercase; }
+.richi-notes-field textarea { display: block; width: 100%; resize: vertical; padding: 11px; border: 1px solid #303232; border-radius: 7px; outline: 0; background: #171919; color: #eee; font-size: 9px; line-height: 1.5; }
+.richi-notes-field textarea:focus { border-color: var(--richi-orange); }
+.richi-customizer-footer { position: sticky; bottom: -30px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; margin-top: 25px; padding: 15px 0 3px; background: linear-gradient(transparent, #111313 14%); }
+.richi-quantity-control { display: grid; grid-template-columns: 34px 34px 34px; height: 43px; overflow: hidden; border: 1px solid #353737; border-radius: 7px; }
+.richi-quantity-control button { border: 0; background: #1a1c1c; color: #ddd; font-size: 16px; cursor: pointer; }
+.richi-quantity-control span { display: grid; place-items: center; background: #111313; font-size: 11px; font-weight: 800; }
+.richi-add-customized { display: flex; align-items: center; justify-content: space-between; height: 43px; padding: 0 15px; border: 0; border-radius: 7px; background: linear-gradient(135deg, #ffb21a, #ff7800); color: #180b00; font-size: 10px; font-weight: 900; cursor: pointer; }
+.richi-add-customized strong { font-size: 12px; }
+
+.richi-cart-overlay { position: fixed; z-index: 120; inset: 0; border: 0; background: rgba(0, 0, 0, .7); cursor: default; backdrop-filter: blur(5px); animation: richi-fade .2s ease both; }
+.richi-cart-drawer {
+  position: fixed;
+  z-index: 130;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(455px, 100%);
+  height: 100dvh;
+  overflow: hidden;
+  border-left: 1px solid #313333;
+  background: #0d0f0f;
+  box-shadow: -30px 0 80px rgba(0, 0, 0, .58);
+  animation: richi-drawer-in .28s cubic-bezier(.2,.7,.2,1) both;
+}
+@keyframes richi-drawer-in { from { transform: translateX(100%); } }
+.richi-cart-head { display: flex; align-items: center; justify-content: space-between; padding: 21px 22px 16px; border-bottom: 1px solid #252727; }
+.richi-cart-head > div > span { color: var(--richi-orange); font-size: 7px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.richi-cart-head h2 { margin-top: 2px; font: 800 20px/1.2 var(--font-body), sans-serif; letter-spacing: -.03em; }
+.richi-cart-head h2 small { margin-left: 5px; color: #818380; font-size: 9px; font-weight: 500; }
+.richi-cart-head > button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #303232; border-radius: 50%; background: #151717; color: #bbb; cursor: pointer; }
+.richi-cart-head svg,
+.richi-delivery-card svg,
+.richi-empty-cart svg,
+.richi-cart-quantity svg { width: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.richi-delivery-card { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px; margin: 13px 16px 0; padding: 10px 11px; border: 1px solid #292b2b; border-radius: 9px; background: #141616; }
+.richi-delivery-card > span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; background: rgba(255, 158, 10, .1); color: var(--richi-orange); }
+.richi-delivery-card small,
+.richi-delivery-card strong { display: block; }
+.richi-delivery-card small { color: #828481; font-size: 7px; }
+.richi-delivery-card strong { margin-top: 2px; color: #dededb; font-size: 9px; }
+.richi-delivery-card > button { border: 0; background: transparent; color: var(--richi-orange); font-size: 8px; font-weight: 800; cursor: pointer; }
+.richi-empty-cart { flex: 1; display: grid; align-content: center; justify-items: center; padding: 40px; text-align: center; }
+.richi-empty-cart > span { display: grid; place-items: center; width: 66px; height: 66px; border: 1px solid #303232; border-radius: 50%; background: #151717; color: #777; }
+.richi-empty-cart > span svg { width: 27px; }
+.richi-empty-cart h3 { margin-top: 17px; font-size: 17px; }
+.richi-empty-cart p { max-width: 240px; margin: 6px 0 18px; color: #838582; font-size: 10px; line-height: 1.55; }
+.richi-empty-cart > button { height: 37px; padding: 0 15px; border: 0; border-radius: 6px; background: var(--richi-orange); color: #180c00; font-size: 9px; font-weight: 900; cursor: pointer; }
+.richi-cart-items { flex: 1 1 auto; overflow-y: auto; padding: 13px 16px 6px; }
+.richi-cart-item { display: grid; grid-template-columns: 76px 1fr; gap: 11px; padding: 11px 0; border-bottom: 1px solid #242626; }
+.richi-cart-thumb { height: 67px; overflow: hidden; border: 1px solid #292b2b; border-radius: 8px; background: #0a0b0b; }
+.richi-cart-thumb img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: screen; filter: saturate(1.1) contrast(1.08); }
+.richi-cart-item-copy { min-width: 0; }
+.richi-cart-item-title { display: flex; justify-content: space-between; gap: 8px; }
+.richi-cart-item-title h3 { overflow: hidden; color: #efefec; font: 750 10px/1.3 var(--font-body), sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.richi-cart-item-title p { max-width: 230px; margin-top: 3px; overflow: hidden; color: #777976; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.richi-cart-item-title > button { flex: 0 0 auto; width: 20px; height: 20px; border: 0; background: transparent; color: #696b69; font-size: 16px; cursor: pointer; }
+.richi-cart-item-bottom { display: flex; align-items: end; justify-content: space-between; margin-top: 9px; }
+.richi-cart-item-bottom > strong { color: #f4f4f1; font-size: 11px; }
+.richi-cart-quantity { display: grid; grid-template-columns: 24px 26px 24px; height: 25px; overflow: hidden; border: 1px solid #303232; border-radius: 5px; }
+.richi-cart-quantity button { display: grid; place-items: center; border: 0; background: #1a1c1c; color: #aaa; cursor: pointer; }
+.richi-cart-quantity button:last-child { color: var(--richi-orange); }
+.richi-cart-quantity svg { width: 11px; }
+.richi-cart-quantity span { display: grid; place-items: center; background: #111313; font-size: 9px; }
+.richi-cart-summary { flex: 0 0 auto; padding: 15px 18px 18px; border-top: 1px solid #2a2c2c; background: #101212; box-shadow: 0 -16px 38px rgba(0, 0, 0, .22); }
+.richi-order-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border-radius: 7px; background: #090a0a; }
+.richi-order-tabs button { height: 30px; border: 0; border-radius: 5px; background: transparent; color: #777976; font-size: 8px; font-weight: 800; cursor: pointer; }
+.richi-order-tabs button.active { background: #242626; color: var(--richi-orange); box-shadow: 0 2px 8px #000; }
+.richi-promo-form { margin: 12px 0; }
+.richi-promo-form label { display: block; margin-bottom: 6px; color: #989a97; font-size: 8px; }
+.richi-promo-form > div { display: grid; grid-template-columns: 1fr auto; height: 34px; overflow: hidden; border: 1px solid #303232; border-radius: 6px; background: #171919; }
+.richi-promo-form input { min-width: 0; padding: 0 10px; border: 0; outline: 0; background: transparent; color: #eee; font-size: 9px; text-transform: uppercase; }
+.richi-promo-form button { width: 64px; border: 0; background: var(--richi-orange); color: #180c00; font-size: 8px; font-weight: 900; cursor: pointer; }
+.richi-promo-form > p { margin-top: 5px; color: #ef7167; font-size: 7px; }
+.richi-totals { display: grid; gap: 6px; margin-top: 12px; }
+.richi-totals > div { display: flex; justify-content: space-between; color: #929491; font-size: 9px; }
+.richi-totals > div strong { color: #d5d5d2; font-weight: 600; }
+.richi-totals .richi-discount,
+.richi-totals .richi-discount strong { color: #7fc34d; }
+.richi-discount button { margin-left: 4px; border: 0; background: none; color: #d66; font-size: 6px; cursor: pointer; }
+.richi-totals .richi-total-row { align-items: center; margin-top: 5px; padding-top: 10px; border-top: 1px solid #303232; color: #f3f3f0; font-size: 11px; font-weight: 800; }
+.richi-totals .richi-total-row strong { color: #fff; font-size: 15px; }
+.richi-checkout-button { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 43px; margin-top: 13px; padding: 0 15px; border: 0; border-radius: 7px; background: linear-gradient(135deg, #ffb51d, #ff7900); color: #190c00; font-size: 10px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 25px rgba(255, 127, 0, .16); }
+.richi-checkout-button strong { font-size: 12px; }
+.richi-secure-note { margin-top: 8px; color: #676966; font-size: 7px; text-align: center; }
+@media (max-width: 1280px) {
+  .richi-storefront { width: min(100% - 32px, 1180px); }
+  .richi-home-grid { grid-template-columns: minmax(0, 1fr); }
+  .richi-promo-rail { display: none; }
+}
+
+@media (max-width: 1060px) {
+  .richi-nav-wrap { grid-template-columns: auto 1fr auto; }
+  .richi-desktop-nav { justify-self: center; gap: 20px; }
+  .richi-featured-layout { grid-template-columns: minmax(0, 1fr) 220px; }
+  .richi-featured-grid { grid-template-columns: repeat(4, minmax(125px, 1fr)); overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; }
+  .richi-featured-grid::-webkit-scrollbar { display: none; }
+  .richi-menu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 820px) {
+  .richi-header { height: 60px; }
+  .richi-customer-main { min-height: calc(100vh - 60px); }
+  .richi-nav-wrap { width: min(100% - 28px, 760px); grid-template-columns: 1fr auto; }
+  .richi-desktop-nav { display: none; }
+  .richi-logo { font-size: 20px; }
+  .richi-search-trigger,
+  .richi-cart-label { display: none; }
+  .richi-login-link { padding: 8px 13px; }
+  .richi-cart-trigger { min-width: 36px; width: 36px; height: 36px; padding: 0; }
+  .richi-storefront { width: min(100% - 24px, 760px); padding-top: 12px; }
+  .richi-hero { min-height: 390px; grid-template-columns: 52% 48%; }
+  .richi-hero-copy { padding-left: 30px; }
+  .richi-hero-art > img { left: 50%; width: 470px; }
+  .richi-beef-seal { right: 7%; transform: scale(.86) rotate(5deg); }
+  .richi-meal-deal { display: none; }
+  .richi-featured-layout { grid-template-columns: 1fr; }
+  .richi-proof-strip { grid-template-columns: 1.6fr 1fr 1fr; }
+  .richi-proof-strip .richi-benefit:last-child { display: none; }
+  .richi-menu-section { padding: 28px; }
+  .richi-menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .richi-customer-shell { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .richi-profile-wrap { display: none; }
+  .richi-mobile-tabs {
+    position: fixed;
+    z-index: 90;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    min-height: calc(62px + env(safe-area-inset-bottom));
+    padding: 6px 8px env(safe-area-inset-bottom);
+    border-top: 1px solid #282a2a;
+    background: rgba(11, 12, 12, .96);
+    box-shadow: 0 -12px 35px rgba(0, 0, 0, .38);
+    backdrop-filter: blur(18px);
+  }
+  .richi-mobile-tabs a,
+  .richi-mobile-tabs > button { position: relative; display: grid; place-items: center; align-content: center; gap: 3px; border: 0; background: transparent; color: #70726f; font-size: 7px; text-decoration: none; cursor: pointer; }
+  .richi-mobile-tabs svg { width: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .richi-mobile-tabs a.active,
+  .richi-mobile-tabs > button.active { color: var(--richi-orange); }
+  .richi-mobile-bag { position: relative; display: grid; place-items: center; }
+  .richi-mobile-bag b { position: absolute; top: -7px; right: -10px; display: grid; place-items: center; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: #e33b31; color: #fff; font-size: 7px; }
+  .richi-storefront { width: min(100% - 20px, 600px); }
+  .richi-home-main { border-radius: 13px; }
+  .richi-hero {
+    min-height: 510px;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    background: radial-gradient(circle at 55% 25%, rgba(255, 109, 0, .2), transparent 39%), #080909;
+  }
+  .richi-hero-copy { grid-row: 2; padding: 0 22px 30px; }
+  .richi-hero-art { grid-row: 1; min-height: 255px; }
+  .richi-hero-art > img { top: 44%; left: 50%; width: 390px; transform: translate(-50%, -50%); }
+  .richi-hero h1 { margin-top: 12px; font-size: clamp(42px, 13vw, 58px); }
+  .richi-hero-copy > p { max-width: 400px; font-size: 10px; }
+  .richi-beef-seal { top: 51%; right: 8%; width: 58px; height: 58px; }
+  .richi-chilli { top: 14%; right: 13%; }
+  .richi-category-bar { padding: 0 7px; }
+  .richi-category-bar button { padding: 0 12px; }
+  .richi-featured { padding: 18px 12px 11px; }
+  .richi-featured-grid { grid-template-columns: repeat(4, 138px); }
+  .richi-proof-strip { grid-template-columns: 1fr 1fr; gap: 10px; padding: 13px; }
+  .richi-review-quote { grid-column: 1 / -1; padding-right: 0; }
+  .richi-benefit { justify-content: start; border-left: 0; }
+  .richi-proof-strip .richi-benefit:last-child { display: flex; }
+  .richi-menu-section { margin-top: 12px; padding: 23px 14px; border-radius: 13px; }
+  .richi-menu-header { align-items: stretch; flex-direction: column; gap: 16px; }
+  .richi-search-box { width: 100%; max-width: none; }
+  .richi-menu-chips { margin: 0 -2px 18px; }
+  .richi-menu-grid { gap: 9px; }
+  .richi-menu-grid .richi-product-copy { padding: 10px; }
+  .richi-menu-grid .richi-product-heading { display: block; }
+  .richi-menu-grid .richi-product-heading h3 { min-height: 32px; font-size: 12px; }
+  .richi-menu-grid .richi-rating { display: block; margin-top: -3px; }
+  .richi-menu-grid .richi-product-copy > p { display: none; }
+  .richi-menu-grid .richi-product-footer { margin-top: 8px; }
+  .richi-menu-grid .richi-product-footer > strong { font-size: 12px; }
+  .richi-menu-grid .richi-product-footer > button { height: 28px; padding: 0 7px; }
+  .richi-toast { bottom: 78px; width: max-content; max-width: calc(100% - 30px); }
+  .richi-modal-backdrop { align-items: end; padding: 0; }
+  .richi-customizer { grid-template-columns: 1fr; width: 100%; max-height: 94dvh; border-right: 0; border-bottom: 0; border-left: 0; border-radius: 18px 18px 0 0; }
+  .richi-customizer-art { height: 205px; }
+  .richi-customizer-art::after { background: linear-gradient(transparent 55%, #111313); }
+  .richi-customizer-art img { min-height: 0; }
+  .richi-customizer-art > span { bottom: 13px; }
+  .richi-customizer-body { padding: 21px 18px calc(18px + env(safe-area-inset-bottom)); }
+  .richi-customizer-body > h2 { padding-right: 35px; font-size: 25px; }
+  .richi-customizer-footer { bottom: calc(-18px - env(safe-area-inset-bottom)); }
+  .richi-cart-drawer { padding-bottom: env(safe-area-inset-bottom); }
+  .richi-cart-summary { max-height: 46dvh; overflow-y: auto; }
+}
+
+@media (max-width: 380px) {
+  .richi-nav-wrap { width: calc(100% - 20px); }
+  .richi-login-link { display: none; }
+  .richi-storefront { width: calc(100% - 14px); }
+  .richi-hero-copy { padding-inline: 17px; }
+  .richi-hero h1 { font-size: 42px; }
+  .richi-hero-actions button { flex: 1; padding: 0 11px; }
+  .richi-featured-grid { grid-template-columns: repeat(4, 130px); }
+  .richi-menu-section { padding-inline: 10px; }
+  .richi-menu-grid { gap: 7px; }
+  .richi-menu-grid .richi-product-copy { padding: 8px; }
+  .richi-product-badge { top: 5px; left: 5px; }
+  .richi-cart-head { padding-inline: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .richi-customer-shell *,
+  .richi-customer-shell *::before,
+  .richi-customer-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Mobile storefront inspired by the supplied phone reference. */
+.richi-mobile-menu-trigger,
+.richi-mobile-menu-panel,
+.richi-mobile-section-title,
+.richi-modal-favorite {
+  display: none;
+}
+
+.richi-checkout-mobile {
+  display: none;
+}
+
+.richi-success-mobile {
+  display: none;
+}
+
+.richi-track-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .richi-customer-shell {
+    --richi-bg: #050505;
+    --richi-surface: #0e0e0d;
+    --richi-surface-2: #171513;
+    --richi-border: #262421;
+    --richi-muted: #969792;
+    --richi-orange: #dc8813;
+    --richi-orange-2: #eb9818;
+    padding-bottom: calc(66px + env(safe-area-inset-bottom));
+    background: #050505;
+  }
+
+  .richi-focused-flow {
+    padding-bottom: 0;
+  }
+
+  .richi-focused-flow .richi-header,
+  .richi-focused-flow .richi-mobile-tabs {
+    display: none;
+  }
+
+  .richi-header {
+    height: 58px;
+    background: rgba(5, 5, 5, .96);
+    box-shadow: none;
+  }
+
+  .richi-nav-wrap {
+    width: calc(100% - 32px);
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .richi-mobile-menu-trigger {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #f3f2ef;
+    cursor: pointer;
+  }
+
+  .richi-mobile-menu-trigger svg {
+    width: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+
+  .richi-logo {
+    justify-self: start;
+    font-family: var(--font-body), sans-serif;
+    font-size: 16px;
+    font-weight: 850;
+    letter-spacing: -.03em;
+    text-transform: uppercase;
+    transform: none;
+  }
+
+  .richi-login-link,
+  .richi-search-trigger,
+  .richi-profile-wrap {
+    display: none;
+  }
+
+  .richi-nav-actions {
+    gap: 0;
+  }
+
+  .richi-cart-trigger {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border: 0;
+    background: transparent;
+    color: #f5f4f1;
+  }
+
+  .richi-cart-trigger svg {
+    width: 23px;
+  }
+
+  .richi-cart-trigger b {
+    top: -1px;
+    right: -1px;
+    min-width: 16px;
+    height: 16px;
+    background: var(--richi-orange);
+    color: #170d02;
+  }
+
+  .richi-mobile-menu-panel {
+    position: fixed;
+    z-index: 79;
+    top: 58px;
+    left: 14px;
+    right: 14px;
+    display: grid;
+    gap: 4px;
+    padding: 10px;
+    border: 1px solid #2b2926;
+    border-radius: 12px;
+    background: rgba(15, 15, 14, .98);
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .65);
+  }
+
+  .richi-mobile-menu-panel a {
+    padding: 12px 13px;
+    border-radius: 8px;
+    color: #e9e8e5;
+    font-size: 13px;
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  .richi-mobile-menu-panel a:active {
+    background: #1c1a18;
+    color: var(--richi-orange);
+  }
+
+  .richi-mobile-tabs {
+    grid-template-columns: repeat(4, 1fr);
+    min-height: calc(66px + env(safe-area-inset-bottom));
+    padding: 7px 10px env(safe-area-inset-bottom);
+    border-top-color: #242321;
+    background: rgba(8, 8, 8, .98);
+  }
+
+  .richi-mobile-tabs a,
+  .richi-mobile-tabs > button {
+    gap: 4px;
+    min-height: 50px;
+    font-size: 9px;
+    font-weight: 600;
+  }
+
+  .richi-mobile-tabs svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .richi-storefront {
+    width: 100%;
+    padding: 0 0 76px;
+  }
+
+  .richi-home-grid {
+    display: block;
+  }
+
+  .richi-home-main {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: #050505;
+    box-shadow: none;
+  }
+
+  .richi-hero {
+    order: 1;
+    display: block;
+    min-height: 322px;
+    border-bottom: 1px solid #1f1e1c;
+    background:
+      radial-gradient(circle at 77% 48%, rgba(221, 133, 15, .2), transparent 34%),
+      #060606;
+  }
+
+  .richi-hero::after {
+    height: 52px;
+    background: linear-gradient(transparent, #050505);
+  }
+
+  .richi-hero-copy {
+    position: absolute;
+    z-index: 6;
+    top: 70px;
+    left: 20px;
+    width: 54%;
+    padding: 0;
+  }
+
+  .richi-fresh-pill,
+  .richi-review-row,
+  .richi-secondary-action,
+  .richi-beef-seal,
+  .richi-chilli,
+  .richi-spark {
+    display: none;
+  }
+
+  .richi-hero h1 {
+    margin: 0;
+    font-family: var(--font-body), sans-serif;
+    font-size: clamp(28px, 8.2vw, 34px);
+    font-weight: 900;
+    line-height: .98;
+    letter-spacing: -.055em;
+  }
+
+  .richi-hero h1 em {
+    color: #f7f6f2;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .richi-hero-copy > p {
+    width: 170px;
+    margin-top: 16px;
+    color: #c6c5c1;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .richi-hero-actions {
+    margin-top: 16px;
+  }
+
+  .richi-hero-actions button {
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 7px;
+    font-size: 10px;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+
+  .richi-primary-action svg {
+    display: none;
+  }
+
+  .richi-hero-art {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+  }
+
+  .richi-hero-art > img {
+    top: 53%;
+    left: 78%;
+    width: 335px;
+    height: 335px;
+    max-width: none;
+    border-radius: 50%;
+    object-fit: cover;
+    transform: translate(-50%, -50%);
+    filter: saturate(1.13) contrast(1.1) drop-shadow(0 18px 24px #000);
+  }
+
+  .richi-featured {
+    order: 2;
+    padding: 18px 20px 12px;
+  }
+
+  .richi-section-heading {
+    margin-bottom: 12px;
+  }
+
+  .richi-section-heading > div > span {
+    display: none;
+  }
+
+  .richi-section-heading h2 {
+    font-size: 16px;
+    font-weight: 750;
+  }
+
+  #featured-title {
+    font-size: 0;
+  }
+
+  #featured-title::after {
+    content: 'Popular Burgers';
+    font-size: 16px;
+  }
+
+  .richi-section-heading > button {
+    font-size: 11px;
+    font-weight: 650;
+  }
+
+  .richi-section-heading > button svg {
+    display: none;
+  }
+
+  .richi-featured-layout {
+    display: block;
+  }
+
+  .richi-featured-grid {
+    display: flex;
+    gap: 10px;
+    margin-right: -20px;
+    padding-right: 20px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .richi-featured-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .richi-featured .richi-product-card {
+    flex: 0 0 138px;
+    scroll-snap-align: start;
+    border-color: #1f1e1c;
+    border-radius: 10px;
+    background: #0d0d0c;
+  }
+
+  .richi-featured .richi-product-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .richi-featured .richi-product-visual,
+  .richi-product-card.is-compact .richi-product-visual {
+    height: 112px;
+    aspect-ratio: auto;
+  }
+
+  .richi-featured .richi-product-badge,
+  .richi-featured .richi-rating,
+  .richi-featured .richi-product-copy > p,
+  .richi-featured .richi-product-footer > button {
+    display: none;
+  }
+
+  .richi-featured .richi-product-copy,
+  .richi-product-card.is-compact .richi-product-copy {
+    padding: 10px 11px 11px;
+  }
+
+  .richi-featured .richi-product-heading h3,
+  .richi-product-card.is-compact .richi-product-heading h3 {
+    min-height: 0;
+    font-size: 12px;
+  }
+
+  .richi-featured .richi-product-footer {
+    margin-top: 5px;
+  }
+
+  .richi-featured .richi-product-footer > strong,
+  .richi-product-card.is-compact .richi-product-footer > strong {
+    font-size: 13px;
+  }
+
+  .richi-mobile-section-title {
+    order: 3;
+    display: block;
+    margin: 8px 20px 11px;
+    color: #f5f4f1;
+    font-family: var(--font-body), sans-serif;
+    font-size: 16px;
+    font-weight: 750;
+  }
+
+  .richi-category-bar {
+    order: 4;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100vw - 70px) / 4);
+    gap: 10px;
+    min-height: 0;
+    padding: 0 20px 22px;
+    overflow-x: auto;
+    border: 0;
+    background: transparent;
+    scrollbar-width: none;
+  }
+
+  .richi-category-bar button {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 6px;
+    height: 66px;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: #11110f;
+    color: #c3c2be;
+    font-size: 9px;
+  }
+
+  .richi-category-bar button span {
+    margin: 0;
+    font-size: 21px;
+    line-height: 1;
+  }
+
+  .richi-category-bar button:hover,
+  .richi-category-bar button.active {
+    border-color: var(--richi-orange);
+    background: #12110f;
+    color: var(--richi-orange);
+  }
+
+  .richi-proof-strip {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .richi-menu-section {
+    min-height: calc(100dvh - 66px);
+    margin: 0;
+    padding: 22px 18px 28px;
+    scroll-margin-top: 58px;
+    border: 0;
+    border-radius: 0;
+    background: #050505;
+  }
+
+  .richi-menu-header {
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .richi-menu-header .richi-kicker,
+  .richi-menu-header p {
+    display: none;
+  }
+
+  .richi-menu-header h2 {
+    margin: 0;
+    font-family: var(--font-body), sans-serif;
+    font-size: 19px;
+    font-weight: 780;
+    letter-spacing: -.025em;
+  }
+
+  .richi-search-box {
+    height: 42px;
+    border-color: #22211f;
+    border-radius: 9px;
+    background: #11110f;
+  }
+
+  .richi-search-box input {
+    font-size: 11px;
+  }
+
+  .richi-menu-chips {
+    gap: 8px;
+    margin: 0 -18px 16px;
+    padding: 0 18px;
+  }
+
+  .richi-menu-chips button {
+    height: 36px;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 7px;
+    background: #11110f;
+    color: #c5c4c0;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .richi-menu-chips button span {
+    display: none;
+  }
+
+  .richi-menu-chips button:hover,
+  .richi-menu-chips button.active {
+    border-color: transparent;
+    background: var(--richi-orange);
+    color: #140d04;
+  }
+
+  .richi-menu-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .richi-menu-grid .richi-product-card {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    min-height: 116px;
+    overflow: hidden;
+    border-color: #1e1d1b;
+    border-radius: 10px;
+    background: #10100f;
+  }
+
+  .richi-menu-grid .richi-product-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .richi-menu-grid .richi-product-visual {
+    width: 108px;
+    height: 100%;
+    min-height: 116px;
+    aspect-ratio: auto;
+    border-radius: 8px;
+  }
+
+  .richi-menu-grid .richi-product-visual::after {
+    background: linear-gradient(90deg, transparent 70%, #10100f);
+  }
+
+  .richi-menu-grid .richi-product-visual img {
+    transform: scale(1.06);
+    mix-blend-mode: normal;
+  }
+
+  .richi-menu-grid .richi-product-badge,
+  .richi-menu-grid .richi-rating {
+    display: none;
+  }
+
+  .richi-menu-grid .richi-product-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    padding: 13px 11px 11px 13px;
+  }
+
+  .richi-menu-grid .richi-product-heading {
+    display: block;
+  }
+
+  .richi-menu-grid .richi-product-heading h3 {
+    min-height: 0;
+    font-size: 13px;
+    font-weight: 750;
+    white-space: nowrap;
+  }
+
+  .richi-menu-grid .richi-product-copy > p {
+    display: -webkit-box;
+    height: auto;
+    margin-top: 5px;
+    overflow: hidden;
+    color: #a1a19d;
+    font-size: 10px;
+    line-height: 1.42;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .richi-menu-grid .richi-product-footer {
+    margin-top: auto;
+  }
+
+  .richi-menu-grid .richi-product-footer > strong {
+    color: #f5f4f1;
+    font-size: 14px;
+  }
+
+  .richi-menu-grid .richi-product-footer > button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 8px;
+    font-size: 0;
+  }
+
+  .richi-menu-grid .richi-product-footer > button span {
+    width: auto;
+    height: auto;
+    background: transparent;
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .richi-product-skeleton {
+    height: 116px;
+    aspect-ratio: auto;
+  }
+
+  .richi-modal-backdrop {
+    z-index: 200;
+    display: block;
+    padding: 0;
+    background: #050505;
+    backdrop-filter: none;
+  }
+
+  .richi-customizer {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(285px, 39dvh) minmax(0, 1fr);
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: #080808;
+    box-shadow: none;
+  }
+
+  .richi-modal-close,
+  .richi-modal-favorite {
+    position: absolute;
+    z-index: 8;
+    top: calc(14px + env(safe-area-inset-top));
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(7, 7, 7, .62);
+    color: #f4f3f0;
+    backdrop-filter: blur(8px);
+  }
+
+  .richi-modal-close {
+    left: 14px;
+    right: auto;
+    font-size: 0;
+  }
+
+  .richi-modal-close::before {
+    content: '\2190';
+    font-size: 22px;
+  }
+
+  .richi-modal-favorite {
+    right: 14px;
+    color: #f4f3f0;
+    font-size: 23px;
+    cursor: pointer;
+  }
+
+  .richi-customizer-art {
+    height: auto;
+    background: #0b0a08;
+  }
+
+  .richi-customizer-art::after {
+    background: linear-gradient(transparent 63%, #080808);
+  }
+
+  .richi-customizer-art img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    mix-blend-mode: normal;
+  }
+
+  .richi-customizer-art > span,
+  .richi-customizer-body > .richi-kicker {
+    display: none;
+  }
+
+  .richi-customizer-body {
+    padding: 16px 20px calc(18px + env(safe-area-inset-bottom));
+    background: #080808;
+  }
+
+  .richi-customizer-body > h2 {
+    padding: 0 78px 0 0;
+    margin: 0 0 7px;
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  .richi-customizer-description {
+    max-width: 92%;
+    color: #b2b1ad;
+    font-size: 12px;
+    line-height: 1.52;
+  }
+
+  .richi-option-group {
+    margin-top: 19px;
+  }
+
+  .richi-option-group legend {
+    margin-bottom: 9px;
+    font-size: 13px;
+  }
+
+  .richi-choice-grid button,
+  .richi-addon-list button {
+    min-height: 44px;
+    font-size: 11px;
+  }
+
+  .richi-addon-list strong {
+    font-size: 11px;
+  }
+
+  .richi-notes-field > span {
+    font-size: 12px;
+  }
+
+  .richi-notes-field textarea {
+    font-size: 11px;
+  }
+
+  .richi-customizer-footer {
+    bottom: calc(-18px - env(safe-area-inset-bottom));
+    grid-template-columns: 130px minmax(0, 1fr);
+    margin: 20px -20px 0;
+    padding: 13px 20px calc(13px + env(safe-area-inset-bottom));
+    border-top: 1px solid #211f1d;
+    background: rgba(8, 8, 8, .98);
+  }
+
+  .richi-quantity-control,
+  .richi-add-customized {
+    height: 46px;
+  }
+
+  .richi-quantity-control {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .richi-add-customized {
+    justify-content: center;
+    gap: 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+
+  .richi-add-customized strong {
+    font-size: 12px;
+  }
+
+  .richi-cart-overlay {
+    z-index: 210;
+    background: #050505;
+    backdrop-filter: none;
+  }
+
+  .richi-cart-drawer {
+    z-index: 220;
+    width: 100%;
+    border: 0;
+    background: #070707;
+    box-shadow: none;
+  }
+
+  .richi-cart-head {
+    position: relative;
+    min-height: 62px;
+    justify-content: center;
+    padding: calc(9px + env(safe-area-inset-top)) 18px 9px;
+    border-bottom-color: #1d1c1a;
+  }
+
+  .richi-cart-head > div {
+    text-align: center;
+  }
+
+  .richi-cart-head > div > span {
+    display: none;
+  }
+
+  .richi-cart-head h2 {
+    margin: 0;
+    font-size: 17px;
+    letter-spacing: 0;
+  }
+
+  .richi-cart-head > button {
+    position: absolute;
+    left: 14px;
+    bottom: 11px;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: transparent;
+    color: #f3f2ef;
+  }
+
+  .richi-cart-head > button svg {
+    width: 22px;
+  }
+
+  .richi-delivery-card,
+  .richi-order-tabs {
+    display: none;
+  }
+
+  .richi-cart-items {
+    padding: 10px 18px 8px;
+  }
+
+  .richi-cart-item {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 11px;
+    margin-bottom: 9px;
+    padding: 9px;
+    border: 0;
+    border-radius: 9px;
+    background: #11110f;
+  }
+
+  .richi-cart-thumb {
+    height: 64px;
+    border: 0;
+  }
+
+  .richi-cart-thumb img {
+    mix-blend-mode: normal;
+  }
+
+  .richi-cart-item-title h3 {
+    font-size: 12px;
+  }
+
+  .richi-cart-item-title p {
+    font-size: 8px;
+  }
+
+  .richi-cart-item-title > button {
+    font-size: 19px;
+  }
+
+  .richi-cart-item-bottom {
+    margin-top: 7px;
+  }
+
+  .richi-cart-item-bottom > strong {
+    font-size: 12px;
+  }
+
+  .richi-cart-quantity {
+    grid-template-columns: 28px 28px 28px;
+    height: 28px;
+  }
+
+  .richi-cart-summary {
+    max-height: none;
+    padding: 13px 18px calc(15px + env(safe-area-inset-bottom));
+    border-top-color: #252320;
+    background: #090909;
+  }
+
+  .richi-promo-form {
+    margin: 0 0 15px;
+  }
+
+  .richi-promo-form label {
+    margin-bottom: 7px;
+    color: #efeeeb;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .richi-promo-form > div {
+    height: 44px;
+    border-color: #242320;
+    border-radius: 8px;
+    background: #11110f;
+  }
+
+  .richi-promo-form input {
+    font-size: 11px;
+    text-transform: none;
+  }
+
+  .richi-promo-form button {
+    width: 66px;
+    background: transparent;
+    color: var(--richi-orange);
+    font-size: 11px;
+  }
+
+  .richi-totals {
+    gap: 9px;
+  }
+
+  .richi-totals > div {
+    font-size: 11px;
+  }
+
+  .richi-totals .richi-total-row {
+    font-size: 14px;
+  }
+
+  .richi-totals .richi-total-row strong {
+    font-size: 16px;
+  }
+
+  .richi-checkout-button {
+    justify-content: center;
+    height: 46px;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+
+  .richi-checkout-button strong,
+  .richi-secure-note {
+    display: none;
+  }
+
+  .richi-checkout-desktop {
+    display: none;
+  }
+
+  .richi-checkout-mobile {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    background: #070707;
+    color: #f5f4f1;
+  }
+
+  .richi-flow-header {
+    position: sticky;
+    z-index: 15;
+    top: 0;
+    display: grid;
+    grid-template-columns: 42px 1fr 42px;
+    align-items: center;
+    min-height: calc(58px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 14px 0;
+    border-bottom: 1px solid #1e1d1b;
+    background: rgba(7, 7, 7, .96);
+    backdrop-filter: blur(14px);
+  }
+
+  .richi-flow-header h1 {
+    font-family: var(--font-body), sans-serif;
+    font-size: 17px;
+    font-weight: 750;
+    text-align: center;
+    letter-spacing: 0;
+  }
+
+  .richi-flow-header > button {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 0;
+    background: transparent;
+    color: #f5f4f1;
+    font-size: 23px;
+    cursor: pointer;
+  }
+
+  .richi-checkout-mobile-body {
+    flex: 1;
+    padding: 16px 18px 118px;
+  }
+
+  .richi-mobile-checkout-section {
+    margin-bottom: 20px;
+  }
+
+  .richi-mobile-checkout-section h2 {
+    margin-bottom: 9px;
+    color: #f4f3f0;
+    font-family: var(--font-body), sans-serif;
+    font-size: 13px;
+    font-weight: 720;
+    letter-spacing: 0;
+  }
+
+  .richi-mobile-address-card {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    min-height: 54px;
+    padding: 8px 11px;
+    border: 1px solid #24231f;
+    border-radius: 9px;
+    background: #11110f;
+  }
+
+  .richi-mobile-address-card > span {
+    color: var(--richi-orange);
+    font-size: 21px;
+    text-align: center;
+  }
+
+  .richi-mobile-address-card input,
+  .richi-mobile-contact-grid input,
+  .richi-mobile-card-fields input {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding: 0 11px;
+    border: 1px solid #292824;
+    border-radius: 7px;
+    outline: 0;
+    background: #11110f;
+    color: #f2f1ee;
+    font-size: 11px;
+  }
+
+  .richi-mobile-address-card input {
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .richi-mobile-address-card strong,
+  .richi-mobile-address-card small {
+    display: block;
+  }
+
+  .richi-mobile-address-card strong {
+    font-size: 11px;
+  }
+
+  .richi-mobile-address-card small {
+    margin-top: 2px;
+    color: #92938e;
+    font-size: 9px;
+  }
+
+  .richi-mobile-signin-note {
+    margin: -2px 0 8px;
+    color: #8e8f8a;
+    font-size: 9px;
+  }
+
+  .richi-mobile-signin-note a {
+    color: var(--richi-orange);
+    font-weight: 700;
+  }
+
+  .richi-mobile-contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .richi-mobile-contact-grid input:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .richi-mobile-choice-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .richi-mobile-choice-pair > button {
+    display: grid;
+    grid-template-columns: 31px 1fr;
+    align-items: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 7px 9px;
+    border: 1px solid #22211e;
+    border-radius: 8px;
+    background: #11110f;
+    color: #d8d7d3;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .richi-mobile-choice-pair > button.active {
+    border-color: var(--richi-orange);
+    background: rgba(220, 136, 19, .055);
+  }
+
+  .richi-mobile-choice-pair > button > span {
+    color: var(--richi-orange);
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .richi-mobile-choice-pair strong,
+  .richi-mobile-choice-pair small {
+    display: block;
+  }
+
+  .richi-mobile-choice-pair strong {
+    color: #f0efec;
+    font-size: 11px;
+  }
+
+  .richi-mobile-choice-pair small {
+    margin-top: 1px;
+    color: #898a85;
+    font-size: 8px;
+  }
+
+  .richi-mobile-time-row {
+    display: flex;
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .richi-mobile-time-row button {
+    height: 31px;
+    padding: 0 13px;
+    border: 1px solid #282723;
+    border-radius: 6px;
+    background: #11110f;
+    color: #92938e;
+    font-size: 9px;
+    cursor: pointer;
+  }
+
+  .richi-mobile-time-row button.active {
+    border-color: var(--richi-orange);
+    color: var(--richi-orange);
+  }
+
+  .richi-mobile-time-row input {
+    min-width: 0;
+    height: 31px;
+    padding: 0 7px;
+    border: 1px solid #282723;
+    border-radius: 6px;
+    color-scheme: dark;
+    background: #11110f;
+    color: #eee;
+    font-size: 9px;
+  }
+
+  .richi-mobile-card-fields {
+    display: grid;
+    grid-template-columns: 1fr 90px 70px;
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .richi-mobile-review-items {
+    display: grid;
+    gap: 7px;
+  }
+
+  .richi-mobile-review-items article {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 7px;
+    border-radius: 8px;
+    background: #11110f;
+  }
+
+  .richi-mobile-review-items img {
+    width: 46px;
+    height: 42px;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+
+  .richi-mobile-review-items strong,
+  .richi-mobile-review-items small {
+    display: block;
+  }
+
+  .richi-mobile-review-items strong {
+    overflow: hidden;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .richi-mobile-review-items small {
+    margin-top: 2px;
+    color: #858681;
+    font-size: 8px;
+  }
+
+  .richi-mobile-review-items article > span {
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .richi-mobile-checkout-total {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #272622;
+  }
+
+  .richi-mobile-checkout-total > div {
+    display: flex;
+    justify-content: space-between;
+    color: #aaa9a5;
+    font-size: 11px;
+  }
+
+  .richi-mobile-checkout-total strong {
+    color: #e9e8e5;
+  }
+
+  .richi-mobile-checkout-total .discount,
+  .richi-mobile-checkout-total .discount strong {
+    color: #78bc52;
+  }
+
+  .richi-mobile-checkout-total .total {
+    margin-top: 4px;
+    padding-top: 11px;
+    border-top: 1px solid #272622;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 750;
+  }
+
+  .richi-mobile-checkout-total .total strong {
+    font-size: 16px;
+  }
+
+  .richi-mobile-place-order {
+    position: fixed;
+    z-index: 20;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid #24231f;
+    background: rgba(8, 8, 8, .98);
+  }
+
+  .richi-mobile-place-order button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 48px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e3971d, #cf790b);
+    color: #160e04;
+    font-size: 12px;
+    font-weight: 850;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .richi-mobile-place-order button:disabled {
+    opacity: .65;
+    cursor: wait;
+  }
+
+  .richi-success-desktop {
+    display: none;
+  }
+
+  .richi-success-mobile {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    background: #070707;
+    color: #f5f4f1;
+  }
+
+  .richi-success-mobile-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    padding: 38px 20px 116px;
+    text-align: center;
+  }
+
+  .richi-success-ring {
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    margin-bottom: 20px;
+    border: 3px solid var(--richi-orange);
+    border-radius: 50%;
+    color: var(--richi-orange);
+    font-size: 34px;
+    line-height: 1;
+  }
+
+  .richi-success-mobile-body h2 {
+    font-family: var(--font-body), sans-serif;
+    font-size: 20px;
+    font-weight: 780;
+    letter-spacing: -.02em;
+  }
+
+  .richi-success-order-number {
+    margin-top: 4px;
+    font-size: 14px;
+  }
+
+  .richi-success-mobile-body > p {
+    margin-top: 4px;
+    color: #aaa9a5;
+    font-size: 11px;
+  }
+
+  .richi-mobile-progress {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    width: 100%;
+    max-width: 390px;
+    margin: 30px 0 22px;
+  }
+
+  .richi-mobile-progress::before {
+    content: '';
+    position: absolute;
+    top: 9px;
+    right: 12%;
+    left: 12%;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--richi-orange) 34%, #292824 34%);
+  }
+
+  .richi-mobile-progress > div {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    color: #71726d;
+    font-size: 8px;
+  }
+
+  .richi-mobile-progress i {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #292824;
+    border-radius: 50%;
+    background: #070707;
+    color: #120d05;
+    font-size: 10px;
+    font-style: normal;
+  }
+
+  .richi-mobile-progress .completed,
+  .richi-mobile-progress .active {
+    color: #d7d6d2;
+  }
+
+  .richi-mobile-progress .completed i,
+  .richi-mobile-progress .active i {
+    border-color: var(--richi-orange);
+    background: var(--richi-orange);
+  }
+
+  .richi-mobile-progress .active {
+    color: var(--richi-orange);
+    font-weight: 700;
+  }
+
+  .richi-success-eta-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 15px 16px;
+    border: 1px solid #24231f;
+    border-radius: 10px;
+    background: #11110f;
+    text-align: left;
+  }
+
+  .richi-success-eta-card span,
+  .richi-success-eta-card strong {
+    display: block;
+  }
+
+  .richi-success-eta-card span {
+    color: #969792;
+    font-size: 9px;
+  }
+
+  .richi-success-eta-card strong {
+    margin-top: 5px;
+    color: var(--richi-orange);
+    font-size: 18px;
+  }
+
+  .richi-success-eta-card b {
+    color: var(--richi-orange);
+    font-size: 45px;
+  }
+
+  .richi-success-details {
+    display: grid;
+    width: 100%;
+    gap: 9px;
+    margin-top: 14px;
+    padding: 13px 15px;
+    border-radius: 9px;
+    background: #0d0d0c;
+  }
+
+  .richi-success-details > div {
+    display: flex;
+    justify-content: space-between;
+    color: #959691;
+    font-size: 10px;
+  }
+
+  .richi-success-details strong {
+    color: #e9e8e5;
+  }
+
+  .richi-success-mobile-actions {
+    position: fixed;
+    z-index: 20;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    gap: 7px;
+    padding: 11px 18px calc(11px + env(safe-area-inset-bottom));
+    border-top: 1px solid #24231f;
+    background: rgba(8, 8, 8, .98);
+  }
+
+  .richi-success-mobile-actions button {
+    height: 46px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e3971d, #cf790b);
+    color: #160e04;
+    font-size: 12px;
+    font-weight: 850;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .richi-success-mobile-actions button:last-child {
+    height: 32px;
+    background: transparent;
+    color: #989994;
+    font-size: 9px;
+  }
+
+  .richi-track-desktop {
+    display: none;
+  }
+
+  .richi-track-mobile {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    background: #070707;
+    color: #f5f4f1;
+  }
+
+  .richi-track-lookup {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 20px 70px;
+    text-align: center;
+  }
+
+  .richi-track-search-icon {
+    display: grid;
+    place-items: center;
+    width: 68px;
+    height: 68px;
+    margin-bottom: 18px;
+    border: 2px solid var(--richi-orange);
+    border-radius: 50%;
+    color: var(--richi-orange);
+    font-size: 32px;
+  }
+
+  .richi-track-lookup h2 {
+    font-family: var(--font-body), sans-serif;
+    font-size: 20px;
+    font-weight: 780;
+  }
+
+  .richi-track-lookup > p {
+    max-width: 270px;
+    margin-top: 6px;
+    color: #999a95;
+    font-size: 11px;
+  }
+
+  .richi-track-lookup form {
+    display: grid;
+    width: 100%;
+    max-width: 380px;
+    gap: 9px;
+    margin-top: 22px;
+  }
+
+  .richi-track-lookup input {
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid #292824;
+    border-radius: 8px;
+    outline: 0;
+    background: #11110f;
+    color: #f4f3f0;
+    font-size: 12px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .richi-track-lookup form button,
+  .richi-track-refresh button {
+    height: 46px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e3971d, #cf790b);
+    color: #160e04;
+    font-size: 12px;
+    font-weight: 850;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .richi-track-error {
+    margin-top: 11px;
+    color: #ef756d;
+    font-size: 10px;
+  }
+
+  .richi-track-mobile-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 20px 100px;
+    text-align: center;
+  }
+
+  .richi-track-mobile-body h2 {
+    font-family: var(--font-body), sans-serif;
+    font-size: 20px;
+    font-weight: 780;
+    letter-spacing: -.02em;
+  }
+
+  .richi-track-mobile-body > p {
+    margin-top: 4px;
+    color: #aaa9a5;
+    font-size: 11px;
+  }
+
+  .richi-track-order-summary {
+    display: grid;
+    width: 100%;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 14px 15px;
+    border: 1px solid #24231f;
+    border-radius: 9px;
+    background: #0e0e0d;
+    text-align: left;
+  }
+
+  .richi-track-order-summary h3 {
+    margin-bottom: 3px;
+    font-family: var(--font-body), sans-serif;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .richi-track-order-summary > div {
+    display: flex;
+    justify-content: space-between;
+    color: #9c9d98;
+    font-size: 10px;
+  }
+
+  .richi-track-order-summary strong {
+    color: #e8e7e4;
+  }
+
+  .richi-track-order-summary .total {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid #292824;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .richi-track-another {
+    margin-top: 14px;
+    border: 0;
+    background: transparent;
+    color: var(--richi-orange);
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .richi-track-refresh {
+    position: fixed;
+    z-index: 20;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid #24231f;
+    background: rgba(8, 8, 8, .98);
+  }
+
+  .richi-track-refresh button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .richi-nav-wrap {
+    width: calc(100% - 26px);
+  }
+
+  .richi-hero-copy {
+    left: 16px;
+  }
+
+  .richi-hero-art > img {
+    left: 81%;
+  }
+
+  .richi-featured {
+    padding-inline: 16px;
+  }
+
+  .richi-featured-grid {
+    margin-right: -16px;
+    padding-right: 16px;
+  }
+
+  .richi-mobile-section-title {
+    margin-inline: 16px;
+  }
+
+  .richi-category-bar {
+    grid-auto-columns: calc((100vw - 62px) / 4);
+    padding-inline: 16px;
+  }
+
+  .richi-menu-section {
+    padding-inline: 14px;
+  }
+
+  .richi-menu-chips {
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+
+  .richi-menu-grid .richi-product-card {
+    grid-template-columns: 98px minmax(0, 1fr);
+  }
+
+  .richi-menu-grid .richi-product-visual {
+    width: 98px;
+  }
+}
