@@ -36,8 +36,12 @@ interface CartContextType {
   cartCount: number;
   cartSubtotal: number;
   deliveryFee: number;
-  orderType: 'DELIVERY' | 'TAKEAWAY' | 'DINE_IN';
-  setOrderType: (type: 'DELIVERY' | 'TAKEAWAY' | 'DINE_IN') => void;
+  orderType: 'DELIVERY' | 'TAKEAWAY';
+  setOrderType: (type: 'DELIVERY' | 'TAKEAWAY') => void;
+  deliveryAddress: string;
+  setDeliveryAddress: (address: string) => void;
+  selectedBranch: string;
+  setSelectedBranch: (branch: string) => void;
   appliedCoupon: {
     code: string;
     discountAmount: number;
@@ -62,7 +66,9 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orderType, setOrderTypeState] = useState<'DELIVERY' | 'TAKEAWAY' | 'DINE_IN'>('DELIVERY');
+  const [orderType, setOrderTypeState] = useState<'DELIVERY' | 'TAKEAWAY'>('DELIVERY');
+  const [deliveryAddress, setDeliveryAddressState] = useState<string>('221B Baker Street, London');
+  const [selectedBranch, setSelectedBranchState] = useState<string>('Oh Richi Central, Via Nazionale 45');
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
   const [appliedRedemption, setAppliedRedemption] = useState<any | null>(null);
 
@@ -77,8 +83,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     }
     const storedType = localStorage.getItem('oh_richi_ordertype');
-    if (storedType) {
+    if (storedType && (storedType === 'DELIVERY' || storedType === 'TAKEAWAY')) {
       setOrderTypeState(storedType as any);
+    }
+    const storedAddr = localStorage.getItem('oh_richi_delivery_address');
+    if (storedAddr) {
+      setDeliveryAddressState(storedAddr);
+    }
+    const storedBranch = localStorage.getItem('oh_richi_branch');
+    if (storedBranch) {
+      setSelectedBranchState(storedBranch);
     }
   }, []);
 
@@ -88,12 +102,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('oh_richi_cart', JSON.stringify(newCart));
   };
 
-  const setOrderType = (type: 'DELIVERY' | 'TAKEAWAY' | 'DINE_IN') => {
+  const setOrderType = (type: 'DELIVERY' | 'TAKEAWAY') => {
     setOrderTypeState(type);
     localStorage.setItem('oh_richi_ordertype', type);
     // Reset coupon/redemption validation if type changes as rules might differ
     setAppliedCoupon(null);
     setAppliedRedemption(null);
+  };
+
+  const setDeliveryAddress = (address: string) => {
+    setDeliveryAddressState(address);
+    localStorage.setItem('oh_richi_delivery_address', address);
+  };
+
+  const setSelectedBranch = (branch: string) => {
+    setSelectedBranchState(branch);
+    localStorage.setItem('oh_richi_branch', branch);
   };
 
   const addToCart = (newItem: Omit<CartItem, 'id'>) => {
@@ -193,6 +217,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         deliveryFee,
         orderType,
         setOrderType,
+        deliveryAddress,
+        setDeliveryAddress,
+        selectedBranch,
+        setSelectedBranch,
         appliedCoupon,
         applyCouponCode,
         removeCoupon,

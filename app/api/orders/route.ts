@@ -248,13 +248,6 @@ export async function POST(request: Request) {
         }
       }
 
-      // If table selected, mark table as OCCUPIED
-      if (tableId && orderType === 'DINE_IN') {
-        await tx.restaurantTable.update({
-          where: { id: tableId },
-          data: { status: 'OCCUPIED' },
-        });
-      }
 
       // Create status history log
       await tx.orderStatusHistory.create({

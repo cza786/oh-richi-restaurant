@@ -144,7 +144,7 @@ export default function OrdersPage() {
   // Get filtered orders
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'ALL') return true;
-    if (['DELIVERY', 'TAKEAWAY', 'DINE_IN'].includes(activeTab)) return order.orderType === activeTab;
+    if (['DELIVERY', 'TAKEAWAY'].includes(activeTab)) return order.orderType === activeTab;
     return order.status === activeTab;
   });
 
@@ -208,7 +208,6 @@ export default function OrdersPage() {
             { label: 'All Orders', value: 'ALL' },
             { label: 'Delivery', value: 'DELIVERY' },
             { label: 'Take-away', value: 'TAKEAWAY' },
-            { label: 'Dine-in', value: 'DINE_IN' },
             { label: 'Pending', value: 'PENDING' },
             { label: 'Accepted', value: 'ACCEPTED' },
             { label: 'Preparing', value: 'PREPARING' },
@@ -357,7 +356,7 @@ export default function OrdersPage() {
         {/* POS Detail Panel Drawer */}
         {selectedOrder && (
           <div className="dashboard-card" style={{ padding: '24px', borderLeft: '2px solid var(--accent-red)', marginBottom: '0' }}>
-            <div className="flex-between" style={{ marginBottom: '20px' }}>
+            <div className="flex-between" style={{ marginBottom: '16px' }}>
               <h3 className="heading-bebas" style={{ fontSize: '1.4rem' }}>Receipt Detail: #{selectedOrder.shortId}</h3>
               <button 
                 onClick={() => setSelectedOrder(null)}
@@ -365,6 +364,72 @@ export default function OrdersPage() {
               >
                 ✕
               </button>
+            </div>
+
+            {/* Customer & Location Info Box */}
+            <div style={{
+              backgroundColor: '#111116',
+              border: '1px solid var(--border)',
+              borderRadius: '8px',
+              padding: '14px',
+              marginBottom: '16px',
+              fontSize: '0.8rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  📍 {selectedOrder.orderType} ORDER
+                </span>
+                {selectedOrder.table ? (
+                  <span className="status-badge status-badge-ready">Table {selectedOrder.table.tableNumber}</span>
+                ) : null}
+              </div>
+
+              <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                👤 {selectedOrder.customerName || 'Walk-in Customer'}
+                {selectedOrder.customerPhone && <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: '8px' }}>({selectedOrder.customerPhone})</span>}
+              </div>
+
+              {selectedOrder.customerEmail && (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                  ✉️ {selectedOrder.customerEmail}
+                </div>
+              )}
+
+              {selectedOrder.orderType === 'DELIVERY' && selectedOrder.deliveryAddress && (
+                <div style={{
+                  marginTop: '4px',
+                  paddingTop: '8px',
+                  borderTop: '1px dashed var(--border)',
+                  color: 'var(--accent-gold)',
+                  fontWeight: 500,
+                }}>
+                  <div>🏠 <strong>Delivery Address:</strong></div>
+                  <div style={{ color: '#fff', marginTop: '2px' }}>{selectedOrder.deliveryAddress}</div>
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedOrder.deliveryAddress)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      marginTop: '6px',
+                      color: 'var(--info)',
+                      fontSize: '0.75rem',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    🗺️ Open in Google Maps ↗
+                  </a>
+                </div>
+              )}
+
+              {selectedOrder.orderType === 'TAKEAWAY' && (
+                <div style={{ color: 'var(--info)', marginTop: '4px', fontSize: '0.75rem' }}>
+                  🛍️ {selectedOrder.deliveryAddress ? `Branch: ${selectedOrder.deliveryAddress}` : 'Pickup Order'}
+                </div>
+              )}
             </div>
 
             {/* Items list */}

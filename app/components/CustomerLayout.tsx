@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCart } from './CartContext';
+import MyDetailModal from './MyDetailModal';
 
 type IconName = 'search' | 'user' | 'bag' | 'home' | 'orders' | 'gift' | 'close' | 'pin' | 'plus' | 'minus' | 'menu' | 'grid' | 'back';
 
@@ -31,16 +32,48 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const {
     cart, updateQuantity, removeFromCart, cartCount, cartSubtotal, deliveryFee,
-    orderType, setOrderType, appliedCoupon, appliedRedemption, removeCoupon,
-    removeRedemption, applyCouponCode,
+    orderType, setOrderType, deliveryAddress, setDeliveryAddress,
+    selectedBranch, setSelectedBranch, appliedCoupon,
+    appliedRedemption, removeCoupon, removeRedemption, applyCouponCode,
   } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeHash, setActiveHash] = useState('');
   const [user, setUser] = useState<any | null>(null);
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
+
+  // Location Modal State
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<'DELIVERY' | 'TAKEAWAY'>('DELIVERY');
+  const [tempAddress, setTempAddress] = useState('');
+  const [tempBranch, setTempBranch] = useState('');
+
+  const openLocationModal = () => {
+    setModalTab(orderType);
+    setTempAddress(deliveryAddress || '221B Baker Street, London');
+    setTempBranch(selectedBranch || 'Oh Richi Central, Via Nazionale 45');
+    setIsLocationModalOpen(true);
+  };
+
+  const handleSaveLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrderType(modalTab);
+    if (modalTab === 'DELIVERY') {
+      if (tempAddress.trim()) setDeliveryAddress(tempAddress.trim());
+    } else if (modalTab === 'TAKEAWAY') {
+      if (tempBranch.trim()) setSelectedBranch(tempBranch.trim());
+    }
+    setIsLocationModalOpen(false);
+  };
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -94,13 +127,16 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   const serviceFee = cartSubtotal > 0 ? 1.5 : 0;
   const discount = appliedCoupon?.discountAmount || appliedRedemption?.reward.discountAmount || 0;
   const total = Math.max(0, cartSubtotal + deliveryFee + serviceFee - discount);
+
   const itemPrice = (item: typeof cart[number]) => item.basePrice
     + (item.variation?.priceDifference || 0)
     + (item.spiceLevel?.priceDifference || 0)
     + item.addons.reduce((sum, addon) => sum + addon.price, 0);
-  const focusedFlow = pathname === '/checkout'
-    || pathname === '/order-success'
-    || pathname.startsWith('/track-order');
+
+  const safePath = mounted ? (pathname || '') : '';
+  const focusedFlow = safePath === '/checkout'
+    || safePath === '/order-success'
+    || safePath.startsWith('/track-order');
 
   return (
     <div className={'customer-shell richi-customer-shell' + (focusedFlow ? ' richi-focused-flow' : '')}>
@@ -119,12 +155,12 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             Oh<span>Richi</span><i>.</i>
           </Link>
 
-          <nav className="richi-desktop-nav" aria-label="Main navigation">
-            <Link href="/" className={pathname === '/' ? 'active' : ''}>Home</Link>
-            <Link href="/#menu">Menu</Link>
-            <Link href="/coupons" className={pathname === '/coupons' ? 'active' : ''}>Deals</Link>
-            <Link href="/rewards" className={pathname === '/rewards' ? 'active' : ''}>Rewards</Link>
-            <Link href="/track-order" className={pathname.startsWith('/track-order') ? 'active' : ''}>Track order</Link>
+          <nav className="richi-desktop-nav" aria-label="Main navigation" suppressHydrationWarning>
+            <Link href="/menu" className={mounted && safePath.startsWith('/menu') ? 'active' : ''}>MENU</Link>
+            <Link href="/promotions" className={mounted && safePath === '/promotions' ? 'active' : ''}>PROMOTIONS</Link>
+            <Link href="/rewards" className={mounted && safePath === '/rewards' ? 'active' : ''}>REWARDS</Link>
+            <Link href="/track-order" className={mounted && safePath.startsWith('/track-order') ? 'active' : ''}>TRACK ORDER</Link>
+            <Link href="/about" className={mounted && safePath === '/about' ? 'active' : ''}>ABOUT US</Link>
           </nav>
 
           <div className="richi-nav-actions">
@@ -139,18 +175,95 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             ><Icon name="search" /></button>
 
             {user ? (
-              <div className="richi-profile-wrap">
-                <button className="richi-nav-icon" type="button" aria-label="Open account menu" aria-expanded={profileOpen} onClick={() => setProfileOpen(!profileOpen)}>
-                  <span className="richi-user-initial">{user.firstName?.[0] || 'R'}</span>
+              <div className="richi-profile-wrap" style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  aria-label="Open account menu"
+                  aria-expanded={profileOpen}
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    padding: 0,
+                    border: '2px solid #ff9500',
+                    backgroundColor: '#121218',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 14px rgba(255, 149, 0, 0.4)',
+                    transition: 'transform 0.2s ease',
+                  }}
+                >
+                  <img
+                    src={user.avatarUrl || user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName || 'User')}+${encodeURIComponent(user.lastName || '')}&background=ff9500&color=fff&bold=true`}
+                    alt={user.firstName || 'Profile'}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
                 </button>
                 {profileOpen && (
                   <>
                     <button className="richi-dropdown-shade" type="button" aria-label="Close account menu" onClick={() => setProfileOpen(false)} />
-                    <div className="richi-profile-menu">
-                      <div><strong>{user.firstName} {user.lastName}</strong><small>{user.email}</small></div>
-                      <Link href="/account" onClick={() => setProfileOpen(false)}>My account</Link>
-                      <Link href="/rewards" onClick={() => setProfileOpen(false)}>Rewards balance</Link>
-                      <button type="button" onClick={logout}>Sign out</button>
+                    <div className="richi-profile-menu" style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      right: 0,
+                      backgroundColor: '#121218',
+                      border: '1px solid #282838',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      minWidth: '220px',
+                      boxShadow: '0 15px 35px rgba(0, 0, 0, 0.7)',
+                      zIndex: 9999,
+                    }}>
+                      <div style={{ paddingBottom: '12px', borderBottom: '1px solid #282838', marginBottom: '10px' }}>
+                        <strong style={{ color: '#ffffff', display: 'block', fontSize: '0.9rem' }}>{user.firstName} {user.lastName}</strong>
+                        <small style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{user.email}</small>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setProfileOpen(false); setIsDetailModalOpen(true); }}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          background: 'none',
+                          border: 'none',
+                          color: '#ff9500',
+                          padding: '8px 0',
+                          fontSize: '0.88rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        👤 My Detail Profile
+                      </button>
+                      <Link href="/account" onClick={() => setProfileOpen(false)} style={{ display: 'block', color: '#cbd5e1', textDecoration: 'none', padding: '8px 0', fontSize: '0.88rem', fontWeight: 600 }}>My account</Link>
+                      <Link href="/rewards" onClick={() => setProfileOpen(false)} style={{ display: 'block', color: '#cbd5e1', textDecoration: 'none', padding: '8px 0', fontSize: '0.88rem', fontWeight: 600 }}>Rewards balance</Link>
+                      <button
+                        type="button"
+                        onClick={logout}
+                        style={{
+                          width: '100%',
+                          marginTop: '8px',
+                          padding: '8px 12px',
+                          backgroundColor: '#1c1c28',
+                          border: '1px solid #3a3a4c',
+                          color: '#ff3b30',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Sign out
+                      </button>
                     </div>
                   </>
                 )}
@@ -159,28 +272,50 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               <Link href="/customer/login" className="richi-login-link">Log in</Link>
             )}
 
-            <button className="richi-cart-trigger" type="button" aria-label={`Open cart with ${cartCount} items`} onClick={() => setCartOpen(true)}>
+            <button
+              className="richi-cart-trigger"
+              type="button"
+              aria-label={`Open cart with ${cartCount} items`}
+              onClick={() => setCartOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '8px 16px',
+                height: '40px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 15px rgba(255, 140, 0, 0.4)',
+              }}
+            >
               <Icon name="bag" />
-              <span className="richi-cart-label">Cart</span>
-              {cartCount > 0 && <b>{cartCount}</b>}
+              <span className="richi-cart-label" style={{ color: '#ffffff', fontWeight: 800 }}>Cart</span>
+              {cartCount > 0 && <b style={{ backgroundColor: '#ffffff', color: '#ff7000', borderRadius: '10px', padding: '2px 7px', fontSize: '0.75rem', fontWeight: 900 }}>{cartCount}</b>}
             </button>
           </div>
         </div>
       </header>
       {mobileMenuOpen && (
         <nav className="richi-mobile-menu-panel" aria-label="Customer shortcuts">
-          <Link href="/#menu">Browse menu</Link>
-          <Link href="/coupons">Deals</Link>
+          <Link href="/menu">Menu</Link>
+          <Link href="/promotions">Promotions</Link>
           <Link href="/rewards">Rewards</Link>
-          <Link href="/track-order">Track an order</Link>
+          <Link href="/track-order">Track Order</Link>
+          <Link href="/about">About Us</Link>
         </nav>
       )}
       <main className="richi-customer-main">{children}</main>
-      <nav className="richi-mobile-tabs" aria-label="Mobile navigation">
-        <Link href="/" className={pathname === '/' && activeHash !== '#menu' ? 'active' : ''}><Icon name="home" /><span>Home</span></Link>
-        <Link href="/#menu" className={pathname === '/' && activeHash === '#menu' ? 'active' : ''}><Icon name="grid" /><span>Menu</span></Link>
-        <Link href="/track-order" className={pathname.startsWith('/track-order') ? 'active' : ''}><Icon name="orders" /><span>Orders</span></Link>
-        <Link href={user ? '/account' : '/customer/login'} className={pathname === '/account' ? 'active' : ''}><Icon name="user" /><span>Profile</span></Link>
+      <nav className="richi-mobile-tabs" aria-label="Mobile navigation" suppressHydrationWarning>
+        <Link href="/" className={mounted && safePath === '/' ? 'active' : ''}><Icon name="home" /><span>Home</span></Link>
+        <Link href="/menu" className={mounted && safePath.startsWith('/menu') ? 'active' : ''}><Icon name="grid" /><span>Menu</span></Link>
+        <Link href="/promotions" className={mounted && safePath === '/promotions' ? 'active' : ''}><Icon name="gift" /><span>Deals</span></Link>
+        <Link href="/track-order" className={mounted && safePath.startsWith('/track-order') ? 'active' : ''}><Icon name="orders" /><span>Orders</span></Link>
+        <Link href={user ? '/account' : '/customer/login'} className={mounted && safePath === '/account' ? 'active' : ''}><Icon name="user" /><span>Profile</span></Link>
       </nav>
       {cartOpen && (
         <>
@@ -196,8 +331,15 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
             <div className="richi-delivery-card">
               <span><Icon name="pin" /></span>
-              <div><small>{orderType === 'DELIVERY' ? 'Deliver to' : 'Pickup from'}</small><strong>{orderType === 'DELIVERY' ? '221B Baker Street' : 'Oh Richi, Central'}</strong></div>
-              <button type="button">Change</button>
+              <div>
+                <small>
+                  {orderType === 'DELIVERY' ? 'Deliver to' : 'Pickup from'}
+                </small>
+                <strong>
+                  {orderType === 'DELIVERY' ? (deliveryAddress || '221B Baker Street, London') : (selectedBranch || 'Oh Richi Central')}
+                </strong>
+              </div>
+              <button type="button" onClick={openLocationModal}>Change</button>
             </div>
 
             {cart.length === 0 ? (
@@ -279,6 +421,186 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           </aside>
         </>
       )}
+
+      {/* Location Selector Modal */}
+      {isLocationModalOpen && (
+        <>
+          <div 
+            onClick={() => setIsLocationModalOpen(false)} 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 99998,
+            }}
+          />
+          <div 
+            role="dialog" 
+            aria-modal="true" 
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              maxWidth: '480px',
+              backgroundColor: '#16161e',
+              border: '1px solid var(--border-color, #2a2a3c)',
+              borderRadius: '16px',
+              padding: '24px',
+              zIndex: 99999,
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+              color: '#fff',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>Select Location & Service</h3>
+              <button 
+                type="button" 
+                onClick={() => setIsLocationModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div style={{ display: 'flex', background: '#0d0d12', borderRadius: '8px', padding: '4px', marginBottom: '20px' }}>
+              {(['DELIVERY', 'TAKEAWAY'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setModalTab(tab)}
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    backgroundColor: modalTab === tab ? '#ff9500' : 'transparent',
+                    color: modalTab === tab ? '#ffffff' : '#94a3b8',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {tab === 'DELIVERY' ? 'Delivery' : 'Takeaway'}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSaveLocation}>
+              {modalTab === 'DELIVERY' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '8px' }}>
+                    Delivery Address
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={tempAddress}
+                    onChange={(e) => setTempAddress(e.target.value)}
+                    placeholder="Enter street, house number, city"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      backgroundColor: '#0d0d12',
+                      border: '1px solid #2a2a3c',
+                      color: '#ffffff',
+                      fontSize: '0.9rem',
+                      marginBottom: '16px',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                    <small style={{ color: '#94a3b8', width: '100%', marginBottom: '4px' }}>Quick Select:</small>
+                    {[
+                      '221B Baker Street, London',
+                      'Via Nazionale 45, Rome',
+                      'Piazza Navona 8, Rome',
+                    ].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setTempAddress(preset)}
+                        style={{
+                          padding: '6px 10px',
+                          fontSize: '0.75rem',
+                          borderRadius: '6px',
+                          backgroundColor: '#1e1e2d',
+                          border: tempAddress === preset ? '1px solid #ff9500' : '1px solid #2a2a3c',
+                          color: tempAddress === preset ? '#ff9500' : '#cbd5e1',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {preset.split(',')[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {modalTab === 'TAKEAWAY' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '8px' }}>
+                    Select Pickup Branch
+                  </label>
+                  <select
+                    value={tempBranch}
+                    onChange={(e) => setTempBranch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      backgroundColor: '#0d0d12',
+                      border: '1px solid #2a2a3c',
+                      color: '#ffffff',
+                      fontSize: '0.9rem',
+                      marginBottom: '20px',
+                    }}
+                  >
+                    <option value="Oh Richi Central, Via Nazionale 45">Oh Richi Central — Via Nazionale 45</option>
+                    <option value="Oh Richi North, Corso Italia 12">Oh Richi North — Corso Italia 12</option>
+                    <option value="Oh Richi Airport, Fiumicino T3">Oh Richi Airport — Fiumicino T3</option>
+                  </select>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)',
+                  color: '#ffffff',
+                  fontWeight: 900,
+                  fontSize: '0.95rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 24px rgba(255, 140, 0, 0.45)',
+                }}
+              >
+                Save Location
+              </button>
+            </form>
+          </div>
+        </>
+      )}
+
+      {/* "My Detail" Profile Popup Modal */}
+      <MyDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        user={user}
+        onSaveUser={(updatedUser) => {
+          setUser((prev: any) => ({ ...prev, ...updatedUser }));
+        }}
+      />
     </div>
   );
 }

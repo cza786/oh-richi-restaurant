@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CustomerLayout from '../components/CustomerLayout';
 import { useCart } from '../components/CartContext';
@@ -38,32 +39,32 @@ export default function RewardsPage() {
   const loadData = async () => {
     try {
       const userRes = await fetch('/api/auth/me');
-      if (!userRes.ok) {
-        router.push('/customer/login');
-        return;
-      }
-      const userData = await userRes.json();
-      setUser(userData.user);
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUser(userData.user);
 
-      // Fetch loyalty account balance
-      const loyaltyRes = await fetch('/api/loyalty/me');
-      if (loyaltyRes.ok) {
-        const loyaltyData = await loyaltyRes.json();
-        setLoyalty(loyaltyData);
+        // Fetch loyalty account balance
+        const loyaltyRes = await fetch('/api/loyalty/me');
+        if (loyaltyRes.ok) {
+          const loyaltyData = await loyaltyRes.json();
+          setLoyalty(loyaltyData);
+        }
+
+        // Fetch transaction history
+        const historyRes = await fetch('/api/loyalty/history');
+        if (historyRes.ok) {
+          const historyData = await historyRes.json();
+          setHistory(historyData);
+        }
+      } else {
+        setUser(null);
       }
 
-      // Fetch active rewards
+      // Fetch active rewards catalog (public for everyone)
       const rewardsRes = await fetch('/api/rewards');
       if (rewardsRes.ok) {
         const rewardsData = await rewardsRes.json();
         setRewards(rewardsData);
-      }
-
-      // Fetch transaction history
-      const historyRes = await fetch('/api/loyalty/history');
-      if (historyRes.ok) {
-        const historyData = await historyRes.json();
-        setHistory(historyData);
       }
     } catch (err) {
       console.error('Error loading rewards page data:', err);
@@ -144,60 +145,103 @@ export default function RewardsPage() {
     <CustomerLayout>
       <div style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 24px' }}>
         
-        <h1 className="heading-bebas" style={{ fontSize: '2.5rem', marginBottom: '24px' }}>Rewards & Loyalty</h1>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <span style={{ color: '#ff9500', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>
+            LOYALTY REWARDS
+          </span>
+          <h1 style={{ fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', margin: '8px 0', textTransform: 'uppercase' }}>
+            YOUR REWARDS & POINTS
+          </h1>
+        </div>
 
-        <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', alignItems: 'start' }}>
           
           {/* LEFT: POINTS METER & ACTIVITY HISTORY */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
-            {/* Points balance display */}
-            <div className="auth-card" style={{ maxWidth: '100%', padding: '32px', textAlign: 'center' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Your Point Balance</p>
+            {/* Points balance display card */}
+            <div style={{
+              background: 'linear-gradient(180deg, #121218 0%, #14131a 65%, rgba(255, 149, 0, 0.16) 100%)',
+              border: '1px solid #282838',
+              borderRadius: '20px',
+              padding: '28px',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.6), inset 0 -30px 45px -15px rgba(255, 149, 0, 0.25)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              <span style={{ color: '#ff9500', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                LOYALTY REWARDS
+              </span>
+              <span style={{ color: '#ffffff', fontSize: '0.95rem', display: 'block' }}>You have</span>
               
-              {/* Radial Points Circle */}
-              <div style={{ width: '150px', height: '150px', borderRadius: '50%', border: '4px solid var(--border)', borderTopColor: 'var(--accent-gold)', margin: '0 auto 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(214, 168, 79, 0.05)' }}>
-                <span style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--accent-gold)' }}>{points.toLocaleString()}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>points</span>
+              <div style={{ margin: '8px 0' }}>
+                <span style={{ fontSize: '3rem', fontWeight: 900, color: '#ff9500', lineHeight: '1' }}>
+                  {points.toLocaleString()}
+                </span>
+                <span style={{ fontSize: '0.9rem', color: '#94a3b8', marginLeft: '8px' }}>Points</span>
               </div>
 
               {nextTier && pointsNeeded > 0 ? (
                 <>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    You are <strong>{pointsNeeded} pts</strong> away from a <strong>{nextTier.name}</strong>!
-                  </p>
                   {/* Progress bar container */}
-                  <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', border: '1px solid var(--border)', margin: '16px 0 8px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${progressPercent}%`, backgroundColor: 'var(--accent-gold)', transition: 'width 0.5s ease', borderRadius: '4px' }}></div>
+                  <div style={{ width: '100%', height: '8px', backgroundColor: '#282838', borderRadius: '4px', margin: '16px 0 8px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${progressPercent}%`, background: 'linear-gradient(90deg, #ff9500 0%, #e07b00 100%)', transition: 'width 0.5s ease', borderRadius: '4px' }}></div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                    <span>0 pts</span>
-                    <span>{nextTier.requiredPoints} pts</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
+                    <span>Next reward at {nextTier.requiredPoints} points</span>
+                    <span>{pointsNeeded} pts left</span>
                   </div>
                 </>
               ) : (
-                <p style={{ fontSize: '0.9rem', color: 'var(--success)', fontWeight: 600 }}>
-                  🏆 You've reached the highest rewards tier! Keep earning!
+                <p style={{ fontSize: '0.9rem', color: '#22c55e', fontWeight: 600, margin: '12px 0 0 0' }}>
+                  🏆 Highest rewards tier unlocked!
                 </p>
               )}
+
+              <div style={{ marginTop: '20px' }}>
+                <Link
+                  href="/menu"
+                  style={{
+                    display: 'inline-block',
+                    backgroundColor: '#1c1c28',
+                    border: '1px solid #3a3a4c',
+                    color: '#ffffff',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                  }}
+                >
+                  View rewards
+                </Link>
+              </div>
             </div>
 
             {/* Loyalty Transactions Log */}
-            <div className="auth-card" style={{ maxWidth: '100%', padding: '24px' }}>
-              <h3 className="heading-bebas" style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '16px' }}>Points Activity</h3>
+            <div style={{
+              background: 'linear-gradient(180deg, #121218 0%, #14131a 65%, rgba(255, 149, 0, 0.16) 100%)',
+              border: '1px solid #282838',
+              borderRadius: '20px',
+              padding: '24px',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.6), inset 0 -30px 45px -15px rgba(255, 149, 0, 0.25)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff', margin: '0 0 16px 0', textTransform: 'uppercase' }}>Points Activity</h3>
               {history.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No point logs recorded yet.</p>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>No point logs recorded yet.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '340px', overflowY: 'auto' }}>
                   {history.map((tx) => {
                     const isDeduction = tx.points < 0;
                     return (
-                      <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-primary)', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.85rem' }}>
+                      <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0a0a0f', padding: '12px 16px', borderRadius: '10px', border: '1px solid #282838', fontSize: '0.85rem' }}>
                         <div>
-                          <p style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{tx.description}</p>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px' }}>{new Date(tx.createdAt).toLocaleDateString()}</p>
+                          <p style={{ fontWeight: 600, color: '#ffffff', margin: 0 }}>{tx.description}</p>
+                          <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: '2px 0 0 0' }}>{new Date(tx.createdAt).toLocaleDateString()}</p>
                         </div>
-                        <span style={{ fontWeight: 700, color: isDeduction ? 'var(--danger)' : 'var(--success)' }}>
+                        <span style={{ fontWeight: 800, color: isDeduction ? 'var(--accent-red, #ff3b30)' : '#22c55e' }}>
                           {isDeduction ? '' : '+'}{tx.points} pts
                         </span>
                       </div>
@@ -210,28 +254,45 @@ export default function RewardsPage() {
           </div>
 
           {/* RIGHT: AVAILABLE REWARDS LIST */}
-          <div className="auth-card" style={{ maxWidth: '100%', padding: '28px' }}>
-            <h3 className="heading-bebas" style={{ fontSize: '1.3rem', color: 'var(--accent-gold)', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>Available Rewards</h3>
+          <div style={{
+            background: 'linear-gradient(180deg, #121218 0%, #14131a 65%, rgba(255, 149, 0, 0.16) 100%)',
+            border: '1px solid #282838',
+            borderRadius: '20px',
+            padding: '28px',
+            boxShadow: '0 15px 35px rgba(0, 0, 0, 0.6), inset 0 -30px 45px -15px rgba(255, 149, 0, 0.25)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ff9500', margin: '0 0 20px 0', textTransform: 'uppercase' }}>Available Rewards</h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {rewards.map((reward) => {
                 const canRedeem = points >= reward.requiredPoints;
                 const pointsDiff = reward.requiredPoints - points;
                 return (
-                  <div key={reward.id} style={{ backgroundColor: 'var(--bg-primary)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                  <div key={reward.id} style={{ backgroundColor: '#0a0a0f', padding: '18px', borderRadius: '14px', border: '1px solid #282838', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
                     <div style={{ flex: 1 }}>
-                      <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>{reward.name}</h4>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>{reward.description || 'Redeem points for discounts.'}</p>
-                      <span style={{ display: 'inline-block', backgroundColor: 'rgba(214, 168, 79, 0.1)', color: 'var(--accent-gold)', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', marginTop: '8px' }}>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>{reward.name}</h4>
+                      <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '4px 0 0 0' }}>{reward.description || 'Redeem points for discounts.'}</p>
+                      <span style={{ display: 'inline-block', backgroundColor: 'rgba(255, 149, 0, 0.15)', color: '#ff9500', fontSize: '0.75rem', fontWeight: 800, padding: '3px 10px', borderRadius: '8px', marginTop: '8px' }}>
                         🪙 {reward.requiredPoints} points
                       </span>
                     </div>
 
                     <button
-                      className={`btn ${canRedeem ? 'btn-primary' : 'btn-secondary'}`}
                       disabled={!canRedeem}
                       onClick={() => handleRedeem(reward.id)}
-                      style={{ width: 'auto', padding: '0 16px', height: '36px', fontSize: '0.8rem', border: !canRedeem ? '1px solid var(--border)' : undefined }}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '12px',
+                        background: canRedeem ? 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)' : '#1a1a24',
+                        color: canRedeem ? '#ffffff' : '#64748b',
+                        border: canRedeem ? 'none' : '1px solid #282838',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        cursor: canRedeem ? 'pointer' : 'not-allowed',
+                        boxShadow: canRedeem ? '0 8px 24px rgba(255, 140, 0, 0.45)' : 'none',
+                      }}
                     >
                       {canRedeem ? 'Redeem' : `Need ${pointsDiff} pts`}
                     </button>

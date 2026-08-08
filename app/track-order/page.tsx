@@ -177,24 +177,63 @@ function TrackOrderContent() {
       </div>
 
       <div className="richi-track-desktop" style={{ maxWidth: '900px', margin: '40px auto', padding: '0 24px' }}>
-      <h1 className="heading-bebas" style={{ fontSize: '2.5rem', marginBottom: '24px' }}>Track Order</h1>
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <span style={{ color: '#ff9500', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>
+          LIVE TRACKING
+        </span>
+        <h1 style={{ fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', margin: '8px 0', textTransform: 'uppercase' }}>
+          TRACK YOUR ORDER
+        </h1>
+      </div>
 
       {/* Lookup search bar */}
-      <div className="auth-card" style={{ maxWidth: '100%', padding: '20px', marginBottom: '32px' }}>
+      <div style={{
+        background: 'linear-gradient(180deg, #121218 0%, #14131a 65%, rgba(255, 149, 0, 0.16) 100%)',
+        border: '1px solid #282838',
+        borderRadius: '20px',
+        padding: '24px',
+        marginBottom: '32px',
+        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.6), inset 0 -30px 45px -15px rgba(255, 149, 0, 0.25)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '12px' }}>
           <input
             type="text"
             placeholder="Enter Order Code (e.g. OR-9204)"
-            className="form-input"
-            style={{ flex: 1, textTransform: 'uppercase' }}
+            style={{
+              flex: 1,
+              padding: '14px 20px',
+              borderRadius: '12px',
+              backgroundColor: '#0a0a0f',
+              border: '1px solid #282838',
+              color: '#ffffff',
+              fontSize: '0.95rem',
+              outline: 'none',
+              textTransform: 'uppercase',
+            }}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '0 24px' }} disabled={loading}>
+          <button
+            type="submit"
+            style={{
+              padding: '0 32px',
+              background: 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '14px',
+              fontWeight: 800,
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              boxShadow: '0 8px 24px rgba(255, 140, 0, 0.45)',
+            }}
+            disabled={loading}
+          >
             {loading ? 'Searching...' : 'Track'}
           </button>
         </form>
-        {error && <p style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '10px' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--accent-red, #ff3b30)', fontSize: '0.85rem', marginTop: '12px', fontWeight: 700 }}>{error}</p>}
       </div>
 
       {order && (
@@ -204,10 +243,16 @@ function TrackOrderContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
             {/* Status Timeline */}
-            <div className="auth-card" style={{ maxWidth: '100%', padding: '24px' }}>
+            <div style={{
+              backgroundColor: '#121218',
+              border: '1px solid #282838',
+              borderRadius: '20px',
+              padding: '24px',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5)',
+            }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order: {order.shortId}</span>
-                <span className="status-badge status-badge-preparing" style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--accent-gold)', borderColor: 'var(--accent-gold)' }}>
+                <span style={{ fontSize: '0.8rem', color: '#ff9500', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Order: {order.shortId}</span>
+                <span className="status-badge status-badge-preparing" style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: '#ff9500', borderColor: '#ff9500', backgroundColor: 'rgba(255, 149, 0, 0.15)', padding: '4px 10px', borderRadius: '12px', fontWeight: 800 }}>
                   {simulatedStatus.replace('_', ' ')}
                 </span>
               </div>

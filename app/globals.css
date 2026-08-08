@@ -2385,3 +2385,43 @@ h1, h2, h3, h4, h5, h6 {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+
+/* OH'Richi Signature Orange Gradient Card Glow */
+.richi-card-glow {
+  background: linear-gradient(180deg, #121218 0%, #14131a 65%, rgba(255, 149, 0, 0.14) 100%) !important;
+  border: 1px solid #282838 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 -30px 45px -15px rgba(255, 149, 0, 0.22) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.auth-card {
+  background: linear-gradient(180deg, #121218 0%, #14131a 65%, rgba(255, 149, 0, 0.14) 100%) !important;
+  border: 1px solid #282838 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 -30px 45px -15px rgba(255, 149, 0, 0.22) !important;
+}
+
+/* Light Orange Gradient Eye-Catching & Eye-Friendly Buttons */
+.btn-primary,
+.richi-primary-action,
+.richi-checkout-button,
+.richi-add-customized {
+  background: linear-gradient(135deg, #ffa000 0%, #ff7000 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 800 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(255, 140, 0, 0.45) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-primary:hover,
+.richi-primary-action:hover,
+.richi-checkout-button:hover,
+.richi-add-customized:hover {
+  background: linear-gradient(135deg, #ffa91a 0%, #ff8000 100%) !important;
+  box-shadow: 0 12px 28px rgba(255, 140, 0, 0.6) !important;
+  transform: translateY(-1px) !important;
+}

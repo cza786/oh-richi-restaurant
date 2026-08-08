@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import CustomerLayout from './components/CustomerLayout';
+import FireParticles from './components/FireParticles';
+import ProductCustomizerModal from './components/ProductCustomizerModal';
 import { useCart } from './components/CartContext';
 
 type PriceValue = number | string;
@@ -254,21 +256,10 @@ export default function CustomerHomePage() {
 
   const openCustomizer = (item: MenuItem) => {
     setCustomizingItem(item);
-    setSelectedVariation(item.variations[0] || null);
-    setSelectedSpice(item.itemSpiceLevels[0]?.spiceLevel || null);
-    setSelectedAddons([]);
-    setQuantity(1);
-    setItemNotes('');
   };
 
   const quickAdd = (item: MenuItem) => {
-    const hasChoices = item.variations.length || item.itemSpiceLevels.length || item.itemAddons.length;
-    if (hasChoices) return openCustomizer(item);
-    addToCart({
-      itemId: item.id, name: item.name, imageUrl: item.imageUrl, basePrice: Number(item.basePrice),
-      quantity: 1, variation: null, spiceLevel: null, addons: [], notes: '',
-    });
-    setToast(`${item.name} added to your cart`);
+    openCustomizer(item);
   };
 
   const toggleAddon = (addon: MenuItem['itemAddons'][number]['addon']) => {
@@ -329,41 +320,145 @@ export default function CustomerHomePage() {
               <div className="richi-points-track"><span /></div>
               <small>Next reward at 1,500 points</small>
               <Link href="/rewards">View rewards</Link>
-              <img src="/burger_hero.png" alt="" />
-            </section>
-
-            <section className="richi-promo-card richi-booking-card">
-              <span className="richi-micro-label">Table reservation</span>
-              <h2>Book your table<br />in advance</h2>
-              <div className="richi-booking-fields">
-                <span>Jul 24, 2026</span><span>7:00 PM</span><span>2 People</span>
-              </div>
-              <Link href="/account">Book now</Link>
             </section>
           </aside>
 
           <div className="richi-home-main">
-            <section className="richi-hero" aria-labelledby="richi-hero-title">
+            <section className="richi-hero" aria-labelledby="richi-hero-title" style={{ position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }}>
+                <FireParticles />
+              </div>
               <div className="richi-hero-glow" aria-hidden="true" />
               <div className="richi-spark richi-spark-one" aria-hidden="true">✦</div>
               <div className="richi-spark richi-spark-two" aria-hidden="true">•</div>
-              <div className="richi-hero-copy">
-                <span className="richi-fresh-pill">100% fresh&nbsp; • &nbsp;premium ingredients</span>
-                <h1 id="richi-hero-title">The best<br /><em>Burger</em><br />in town</h1>
+              <div className="richi-hero-copy" style={{ position: 'relative', zIndex: 2 }}>
+                <span className="richi-fresh-pill">100% Halal &nbsp;•&nbsp; Freshly Made Daily</span>
+                <h1 id="richi-hero-title" style={{ fontSize: '3rem', lineHeight: '1.05', textTransform: 'uppercase' }}>
+                  BURGERS THAT<br /><em style={{ color: 'var(--accent-gold, #d6a84f)' }}>HIT DIFFERENT</em>
+                </h1>
                 <div className="richi-review-row">
                   <span aria-label="5 out of 5 stars">★★★★★</span>
-                  <small>4.8 (2.4K+ reviews)</small>
+                  <small>4.9 (3.2K+ reviews)</small>
                 </div>
-                <p>Fresh ingredients, flame-grilled patties and bold flavor in every bite.</p>
+                <p>Premium ingredients, bold recipes and cheese that melts into every layer.</p>
                 <div className="richi-hero-actions">
-                  <button type="button" className="richi-primary-action" onClick={scrollToMenu}>Order now <ArrowIcon /></button>
-                  <button type="button" className="richi-secondary-action" onClick={scrollToMenu}>View menu</button>
+                  <Link href="/menu" className="richi-primary-action" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    ORDER NOW <ArrowIcon />
+                  </Link>
+                  <Link href="/menu" className="richi-secondary-action" style={{ textDecoration: 'none' }}>
+                    EXPLORE MENU
+                  </Link>
                 </div>
               </div>
-              <div className="richi-hero-art" aria-hidden="true">
-                <img src="/burger_hero.png" alt="" />
-                <div className="richi-beef-seal"><b>100%</b><span>premium</span><strong>Beef</strong></div>
+              <div className="richi-hero-art" aria-hidden="true" style={{ position: 'relative', zIndex: 2 }}>
+                <img src="/burger_hero.png" alt="OH Richi Signature Burger" />
+                <div className="richi-beef-seal"><b>100%</b><span>HALAL</span><strong>Beef</strong></div>
                 <span className="richi-chilli">🌶️</span>
+              </div>
+            </section>
+
+            {/* TRUST & QUALITY SECTION (4 FEATURE BLOCKS) */}
+            <section style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '16px',
+              margin: '24px 0',
+            }}>
+              {[
+                { icon: '📜', title: '100% HALAL', desc: 'Certified Ingredients' },
+                { icon: '🔥', title: 'FRESHLY MADE', desc: 'Every Single Order' },
+                { icon: '⭐', title: 'PREMIUM QUALITY', desc: 'Best Ingredients' },
+                { icon: '🍔', title: 'BOLD FLAVOURS', desc: 'Made to Perfection' },
+              ].map((block) => (
+                <div 
+                  key={block.title}
+                  style={{
+                    backgroundColor: '#13131a',
+                    border: '1px solid #232333',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}
+                >
+                  <span style={{ fontSize: '1.8rem' }}>{block.icon}</span>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#ffffff', letterSpacing: '0.5px' }}>
+                      {block.title}
+                    </h4>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+                      {block.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            {/* HAPPY HOUR PROMOTION BANNER */}
+            <section style={{
+              backgroundColor: '#121218',
+              border: '1px solid #282838',
+              borderRadius: '24px',
+              padding: '28px',
+              margin: '24px 0',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '20px',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5)',
+            }}>
+              <div style={{ flex: '1 1 300px' }}>
+                <span style={{
+                  display: 'inline-block',
+                  color: '#ff9500',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                  marginBottom: '8px',
+                }}>
+                  🔥 Limited Time Deal
+                </span>
+                <h2 style={{ margin: '0 0 6px 0', fontSize: '1.8rem', fontWeight: 900, color: '#ffffff', textTransform: 'uppercase' }}>
+                  HAPPY HOUR SPECIAL
+                </h2>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.5rem', fontWeight: 900, color: '#ff9500' }}>
+                  20% OFF ALL BURGERS
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                  Monday – Thursday • 3 PM – 6 PM
+                </p>
+                <div style={{ marginTop: '16px' }}>
+                  <Link
+                    href="/menu"
+                    style={{
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '12px 24px',
+                      fontSize: '0.88rem',
+                      fontWeight: 800,
+                      color: '#ffffff',
+                      background: 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)',
+                      borderRadius: '14px',
+                      boxShadow: '0 8px 24px rgba(255, 140, 0, 0.45)',
+                    }}
+                  >
+                    ORDER NOW
+                  </Link>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <img 
+                  src="/burger_hero.png" 
+                  alt="Happy Hour Burger Deal" 
+                  style={{ width: '140px', height: 'auto', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }}
+                />
               </div>
             </section>
 
@@ -481,102 +576,33 @@ export default function CustomerHomePage() {
       </div>
       {toast && <div className="richi-toast" role="status"><span>✓</span>{toast}</div>}
 
-      {customizingItem && (
-        <div className="richi-modal-backdrop" onMouseDown={(event) => {
-          if (event.currentTarget === event.target) setCustomizingItem(null);
-        }}>
-          <section className="richi-customizer" role="dialog" aria-modal="true" aria-labelledby="customizer-title">
-            <button className="richi-modal-close" type="button" onClick={() => setCustomizingItem(null)} aria-label="Close customizer">×</button>
-            <button className="richi-modal-favorite" type="button" aria-label="Save as favorite">&hearts;</button>
-            <div className="richi-customizer-art">
-              <img src={customizingItem.imageUrl || '/burger_hero.png'} alt={customizingItem.name} />
-              <span>Made fresh for you</span>
-            </div>
-            <div className="richi-customizer-body">
-              <span className="richi-kicker">Customize your order</span>
-              <h2 id="customizer-title">{customizingItem.name}</h2>
-              <p className="richi-customizer-description">{customizingItem.description}</p>
-
-              {customizingItem.variations.length > 0 && (
-                <fieldset className="richi-option-group">
-                  <legend><span>1</span> Choose your size</legend>
-                  <div className="richi-choice-grid">
-                    {customizingItem.variations.map((variation) => (
-                      <button
-                        type="button"
-                        key={variation.id}
-                        className={selectedVariation?.id === variation.id ? 'active' : ''}
-                        onClick={() => setSelectedVariation(variation)}
-                      >
-                        <span>{variation.name}</span>
-                        <small>{Number(variation.priceDifference) > 0 ? `+${money(variation.priceDifference)}` : 'Included'}</small>
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
-
-              {customizingItem.itemSpiceLevels.length > 0 && (
-                <fieldset className="richi-option-group">
-                  <legend><span>2</span> Pick your heat</legend>
-                  <div className="richi-choice-grid">
-                    {customizingItem.itemSpiceLevels.map(({ spiceLevel }) => (
-                      <button
-                        type="button"
-                        key={spiceLevel.id}
-                        className={selectedSpice?.id === spiceLevel.id ? 'active' : ''}
-                        onClick={() => setSelectedSpice(spiceLevel)}
-                      >
-                        <span>{spiceLevel.name}</span>
-                        <small>{'🌶'.repeat(Math.max(1, Math.min(3, spiceLevel.value)))}</small>
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
-
-              {customizingItem.itemAddons.length > 0 && (
-                <fieldset className="richi-option-group">
-                  <legend><span>3</span> Add something extra</legend>
-                  <div className="richi-addon-list">
-                    {customizingItem.itemAddons
-                      .filter(({ addon }) => addon.isAvailable !== false)
-                      .map(({ addon }) => {
-                        const active = selectedAddons.some((selected) => selected.id === addon.id);
-                        return (
-                          <button type="button" key={addon.id} className={active ? 'active' : ''} onClick={() => toggleAddon(addon)}>
-                            <i>{active ? '✓' : '+'}</i><span>{addon.name}</span><strong>+{money(addon.price)}</strong>
-                          </button>
-                        );
-                      })}
-                  </div>
-                </fieldset>
-              )}
-
-              <label className="richi-notes-field">
-                <span>Special instructions <small>Optional</small></span>
-                <textarea
-                  rows={2}
-                  placeholder="No onions, sauce on the side..."
-                  value={itemNotes}
-                  onChange={(event) => setItemNotes(event.target.value)}
-                />
-              </label>
-
-              <div className="richi-customizer-footer">
-                <div className="richi-quantity-control">
-                  <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Decrease quantity">−</button>
-                  <span>{quantity}</span>
-                  <button type="button" onClick={() => setQuantity(quantity + 1)} aria-label="Increase quantity">+</button>
-                </div>
-                <button type="button" className="richi-add-customized" onClick={addCustomizedItem}>
-                  <span>Add to cart</span><strong>{money(modalPrice)}</strong>
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
+      <ProductCustomizerModal
+        item={customizingItem}
+        onClose={() => setCustomizingItem(null)}
+        onAddToCart={({ item: customizedItem, quantity, variation, spiceLevel, addons, notes }) => {
+          addToCart({
+            itemId: customizedItem.id,
+            name: customizedItem.name,
+            imageUrl: customizedItem.imageUrl || null,
+            basePrice: Number(customizedItem.basePrice),
+            quantity,
+            variation: variation ? {
+              id: variation.id,
+              name: variation.name,
+              priceDifference: Number(variation.priceDifference || 0),
+            } : null,
+            spiceLevel: spiceLevel ? {
+              id: spiceLevel.id,
+              name: spiceLevel.name,
+              priceDifference: Number(spiceLevel.priceDifference || 0),
+            } : null,
+            addons: addons.map((a) => ({ id: a.id, name: a.name, price: Number(a.price) })),
+            notes,
+          });
+          setToast(`${customizedItem.name} added to your cart!`);
+          setCustomizingItem(null);
+        }}
+      />
     </CustomerLayout>
   );
 }

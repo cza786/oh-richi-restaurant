@@ -237,19 +237,26 @@ async function main() {
   }
   console.log('Seeded basic addons.');
 
-  // 12. Seed Menu Categories: Burgers, Pizzas, Drinks, Desserts
+  // 12. Seed Menu Categories
   const categoriesData = [
-    { id: 'd3b07384-d113-4e4e-862d-0b32525164a0', name: 'Burgers', sortOrder: 1 },
-    { id: 'd3b07384-d113-4e4e-862d-0b32525164a1', name: 'Pizzas', sortOrder: 2 },
-    { id: 'd3b07384-d113-4e4e-862d-0b32525164a2', name: 'Drinks', sortOrder: 3 },
-    { id: 'd3b07384-d113-4e4e-862d-0b32525164a3', name: 'Desserts', sortOrder: 4 },
+    { id: 'cat-chunky-beef', name: 'Chunky Beef Burger', sortOrder: 1 },
+    { id: 'cat-chicken', name: 'Chicken / Hänchen', sortOrder: 2 },
+    { id: 'cat-vegetarisch', name: 'Vegetarisch', sortOrder: 3 },
+    { id: 'cat-combo-menu', name: 'Burger im Menü', sortOrder: 4 },
+    { id: 'cat-fries', name: 'Stealth Fries / Loaded', sortOrder: 5 },
+    { id: 'cat-drinks', name: 'Getränke', sortOrder: 6 },
+    { id: 'cat-coffee', name: 'Coffee', sortOrder: 7 },
+    { id: 'cat-sweets', name: 'Sweets', sortOrder: 8 },
+    { id: 'cat-toppings', name: 'Toppings', sortOrder: 9 },
+    { id: 'cat-spices', name: 'Spices', sortOrder: 10 },
+    { id: 'cat-sauces', name: 'Saucen', sortOrder: 11 },
   ];
 
   const categories: Record<string, any> = {};
   for (const cat of categoriesData) {
     categories[cat.name] = await prisma.menuCategory.upsert({
       where: { id: cat.id },
-      update: {},
+      update: { name: cat.name, sortOrder: cat.sortOrder },
       create: {
         id: cat.id,
         locationId: location.id,
@@ -259,223 +266,343 @@ async function main() {
       },
     });
   }
-  console.log('Seeded menu categories.');
+  console.log('Seeded brand menu categories.');
 
-  // 13. Seed Menu Items & Variations & Addons links
-  // Burgers - Richi Classic Burger
-  const richiBurger = await prisma.menuItem.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164b0' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164b0',
-      categoryId: categories['Burgers'].id,
-      name: 'Richi Classic Burger',
-      description: 'Flame-grilled Angus beef patty with fresh lettuce, tomato, onions, and Richi signature sauce.',
-      basePrice: 12.50,
-      isAvailable: true,
+  // 13. Seed Chunky Beef Burgers
+  const beefBurgers = [
+    {
+      id: 'prod-classic-hammhhh',
+      name: 'Classic Hammhhh',
+      tagline: 'Taste like Mmmooorreee',
+      description: 'Reg/Big Bun, smashed Prime Beef, Zwiebeln, Gurke, Salat, Ketchup, Senf',
+      basePrice: 7.00,
+      chunkyPrice: 10.00,
+      imageUrl: '/burger_hero.png',
     },
-  });
+    {
+      id: 'prod-classic-cheeeese',
+      name: 'Classic Cheeeese',
+      tagline: 'Put a smile on your Face',
+      description: 'Reg/Big Bun, smashed Prime Beef, American Cheese, Salat, Zwiebeln, Gurke, Tomate, Ketchup, Mayo',
+      basePrice: 7.50,
+      chunkyPrice: 10.50,
+      imageUrl: '/burger_hero.png',
+    },
+    {
+      id: 'prod-so-ho',
+      name: 'So,hO',
+      tagline: 'Alll about the Onion',
+      description: 'Reg/Big Bun, smashed Prime Beef, American Cheese, Röstzwiebeln, Gurke, Oh-G Sauce',
+      basePrice: 8.00,
+      chunkyPrice: 11.50,
+      imageUrl: '/burger_hero.png',
+    },
+    {
+      id: 'prod-oh-g',
+      name: "Oh'G",
+      tagline: 'Caution can be Addictive',
+      description: 'Reg/Big Bun, smashed Prime Beef, American Cheese, Röstzwiebeln, Chimi Mayo, Beef Bacon, Gurke, Tomate, Salat, Oh-G Sauce',
+      basePrice: 8.50,
+      chunkyPrice: 12.50,
+      imageUrl: '/burger_hero.png',
+    },
+    {
+      id: 'prod-oh-bacon',
+      name: "Oh'Bacon",
+      tagline: 'Born in the USA (Pikant 🌶️)',
+      description: 'Reg/Big Bun, smashed Prime Beef, Double Beef Bacon, Röstzwiebeln, American Cheese, Jalapeño, BBQ Sauce, Chimi Mayo',
+      basePrice: 9.00,
+      chunkyPrice: 13.50,
+      imageUrl: '/burger_hero.png',
+    },
+  ];
 
-  // Variations for Richi Classic Burger
-  await prisma.itemVariation.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164d5' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164d5',
-      itemId: richiBurger.id,
-      name: 'Single Patty',
-      priceDifference: 0,
-      sku: 'RBUR-SNGL',
-    },
-  });
-  await prisma.itemVariation.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164d6' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164d6',
-      itemId: richiBurger.id,
-      name: 'Double Patty',
-      priceDifference: 4.00,
-      sku: 'RBUR-DBL',
-    },
-  });
-
-  // Connect Burger with Addons (Extra Cheese, Crispy Bacon, Jalapenos)
-  for (const addonName of ['Extra Cheese', 'Crispy Bacon', 'Jalapenos']) {
-    const addonId = addons[addonName].id;
-    await prisma.itemAddon.upsert({
-      where: {
-        itemId_addonId: { itemId: richiBurger.id, addonId },
+  for (const b of beefBurgers) {
+    const item = await prisma.menuItem.upsert({
+      where: { id: b.id },
+      update: { name: b.name, description: b.description, basePrice: b.basePrice },
+      create: {
+        id: b.id,
+        categoryId: categories['Chunky Beef Burger'].id,
+        name: b.name,
+        description: `${b.tagline} — ${b.description}`,
+        basePrice: b.basePrice,
+        imageUrl: b.imageUrl,
+        isAvailable: true,
       },
+    });
+
+    // Seed Regular & Chunky variations
+    await prisma.itemVariation.upsert({
+      where: { id: `${b.id}-reg` },
       update: {},
       create: {
-        itemId: richiBurger.id,
-        addonId,
-        isRequired: false,
-        maxLimit: 3,
+        id: `${b.id}-reg`,
+        itemId: item.id,
+        name: 'Regular (Martins Roll 4")',
+        priceDifference: 0,
+      },
+    });
+    await prisma.itemVariation.upsert({
+      where: { id: `${b.id}-chunky` },
+      update: {},
+      create: {
+        id: `${b.id}-chunky`,
+        itemId: item.id,
+        name: 'Chunky (Big Martins 5")',
+        priceDifference: b.chunkyPrice - b.basePrice,
       },
     });
   }
 
-  // Connect Burger with Spice Levels (Mild, Medium, Hot, Extra Hot)
-  for (const spiceName of ['Mild', 'Medium', 'Hot', 'Extra Hot']) {
-    const spiceLevelId = spiceLevels[spiceName].id;
-    await prisma.itemSpiceLevel.upsert({
-      where: {
-        itemId_spiceLevelId: { itemId: richiBurger.id, spiceLevelId },
-      },
+  // Mighty OH
+  const mightyOh = await prisma.menuItem.upsert({
+    where: { id: 'prod-mighty-oh' },
+    update: {},
+    create: {
+      id: 'prod-mighty-oh',
+      categoryId: categories['Chunky Beef Burger'].id,
+      name: 'Mighty OH',
+      description: 'If Big gets Great, it becomes Mighty — Big Bun, 2x Double smash, 500gr. Prime Beef, 4 Fach American Cheese, Tomate, Gurke, Salat, Röstzwiebeln, Krautsalat, BBQ Sauce',
+      basePrice: 19.50,
+      imageUrl: '/burger_hero.png',
+      isAvailable: true,
+    },
+  });
+
+  // Seed Chicken Products
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-buffall-oh' },
+    update: {},
+    create: {
+      id: 'prod-buffall-oh',
+      categoryId: categories['Chicken / Hänchen'].id,
+      name: 'Buffall,Oh',
+      description: 'Dont be a Chicken (Pikant 🌶️) — Big Bun, Grilled Chicken Filet Stripes, Coleslaw, American Cheese, Tomate, Buffalo BBQ Sauce, Jalapenos',
+      basePrice: 13.50,
+      imageUrl: '/burger_hero.png',
+      isAvailable: true,
+    },
+  });
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-chick-oh' },
+    update: {},
+    create: {
+      id: 'prod-chick-oh',
+      categoryId: categories['Chicken / Hänchen'].id,
+      name: 'Chick,Oh',
+      description: 'Oldscool Kick — Big Bun, Grilled Chicken Filet Stripes, Beef Bacon, American Cheese, Tomate, Gurke, Salat, Röstzwiebeln, Chimmi Mayo',
+      basePrice: 13.50,
+      imageUrl: '/burger_hero.png',
+      isAvailable: true,
+    },
+  });
+
+  // Seed Vegetarisch Products
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-rainb-oh' },
+    update: {},
+    create: {
+      id: 'prod-rainb-oh',
+      categoryId: categories['Vegetarisch'].id,
+      name: 'Rainb,Oh',
+      description: 'Feel Innocent (🥬 Vegetarisch) — Reg Bun, Grilled Haloumi Cheese, Salat, Tomate, Gurke, Coleslaw, ChimminMayo',
+      basePrice: 9.90,
+      imageUrl: '/burger_hero.png',
+      isAvailable: true,
+    },
+  });
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-veggi-oh' },
+    update: {},
+    create: {
+      id: 'prod-veggi-oh',
+      categoryId: categories['Vegetarisch'].id,
+      name: 'Veggi,Oh',
+      description: 'Green Soul (🥬 Vegetarisch) — Big Bun, American Cheese, Beyond Meat Patty, Röstzwiebeln, Salat, Tomate, Gurke, Oh,G Sauce',
+      basePrice: 12.00,
+      imageUrl: '/burger_hero.png',
+      isAvailable: true,
+    },
+  });
+
+  // Seed Burger im Menü (Combo Upgrade)
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-combo-menu' },
+    update: {},
+    create: {
+      id: 'prod-combo-menu',
+      categoryId: categories['Burger im Menü'].id,
+      name: 'Burger im Menü Deal',
+      description: 'Add a 0.3L Softdrink + Stealth Fries + Sauce to any burger',
+      basePrice: 5.80,
+      imageUrl: '/burger_hero.png',
+      isAvailable: true,
+    },
+  });
+
+  // Seed Stealth Fries / Loaded
+  const friesData = [
+    { id: 'fries-basic', name: 'Fries – BBQ / Ketchup / Mayo / Oh-G', price: 5.00 },
+    { id: 'fries-chimmi', name: 'Fries – Chimmi Mayo', price: 6.00 },
+    { id: 'fries-truffle', name: 'Fries – Trüffelmayo-Parmesan', price: 7.50 },
+  ];
+  for (const f of friesData) {
+    await prisma.menuItem.upsert({
+      where: { id: f.id },
       update: {},
       create: {
-        itemId: richiBurger.id,
-        spiceLevelId,
+        id: f.id,
+        categoryId: categories['Stealth Fries / Loaded'].id,
+        name: f.name,
+        description: 'Crispy stealth fries seasoned to perfection.',
+        basePrice: f.price,
+        imageUrl: '/burger_hero.png',
+        isAvailable: true,
       },
     });
   }
 
-  // Pizzas - Margherita Pizza
-  const margherita = await prisma.menuItem.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164b1' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164b1',
-      categoryId: categories['Pizzas'].id,
-      name: 'Margherita Pizza',
-      description: 'San Marzano tomatoes, fresh mozzarella, fresh basil, and extra virgin olive oil.',
-      basePrice: 10.00,
-      isAvailable: true,
-    },
-  });
-
-  // Variations for Margherita Pizza (Standard, Family Size)
-  await prisma.itemVariation.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164d7' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164d7',
-      itemId: margherita.id,
-      name: 'Standard (32cm)',
-      priceDifference: 0,
-      sku: 'PZMAR-STD',
-    },
-  });
-  await prisma.itemVariation.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164d8' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164d8',
-      itemId: margherita.id,
-      name: 'Family (50cm)',
-      priceDifference: 6.50,
-      sku: 'PZMAR-FAM',
-    },
-  });
-
-  // Connect Margherita with Addons
-  for (const addonName of ['Extra Cheese', 'Grilled Mushrooms']) {
-    const addonId = addons[addonName].id;
-    await prisma.itemAddon.upsert({
-      where: {
-        itemId_addonId: { itemId: margherita.id, addonId },
-      },
+  // Seed Drinks & Coffee
+  const drinksData = [
+    { id: 'drink-coke', name: 'Coca Cola', price: 3.00, desc: '0.3L Softdrink' },
+    { id: 'drink-coke-zero', name: 'Coca Cola Zero', price: 3.00, desc: '0.3L Softdrink' },
+    { id: 'drink-fanta', name: 'Fanta', price: 3.00, desc: '0.3L Softdrink' },
+    { id: 'drink-sprite', name: 'Sprite', price: 3.00, desc: '0.3L Softdrink' },
+    { id: 'drink-water', name: 'Vio Wasser Still', price: 3.00, desc: '0.5L Mineral Water' },
+  ];
+  for (const d of drinksData) {
+    await prisma.menuItem.upsert({
+      where: { id: d.id },
       update: {},
       create: {
-        itemId: margherita.id,
-        addonId,
-        isRequired: false,
-        maxLimit: 2,
+        id: d.id,
+        categoryId: categories['Getränke'].id,
+        name: d.name,
+        description: d.desc,
+        basePrice: d.price,
+        imageUrl: '/burger_hero.png',
+        isAvailable: true,
       },
     });
   }
 
-  // Drinks - Coca Cola, Still Water
-  const coke = await prisma.menuItem.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164b2' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164b2',
-      categoryId: categories['Drinks'].id,
-      name: 'Coca Cola',
-      description: 'Refreshing cold soft drink.',
-      basePrice: 2.50,
-      isAvailable: true,
-    },
-  });
+  const coffeeData = [
+    { id: 'coffee-americano', name: 'Coffee Americano', price: 2.80 },
+    { id: 'coffee-cappuccino', name: 'Cappuccino', price: 3.00 },
+    { id: 'coffee-espresso', name: 'Espresso', price: 2.00 },
+    { id: 'coffee-double-espresso', name: 'Double Espresso', price: 3.00 },
+    { id: 'coffee-latte', name: 'Caffee Latte', price: 3.00 },
+  ];
+  for (const c of coffeeData) {
+    await prisma.menuItem.upsert({
+      where: { id: c.id },
+      update: {},
+      create: {
+        id: c.id,
+        categoryId: categories['Coffee'].id,
+        name: c.name,
+        description: 'Freshly brewed artisan coffee.',
+        basePrice: c.price,
+        imageUrl: '/burger_hero.png',
+        isAvailable: true,
+      },
+    });
+  }
 
-  const water = await prisma.menuItem.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164b3' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164b3',
-      categoryId: categories['Drinks'].id,
-      name: 'Still Water',
-      description: 'Acqua Panna still mineral water.',
-      basePrice: 2.00,
-      isAvailable: true,
-    },
-  });
+  // Seed Sweets
+  const sweetsData = [
+    { id: 'sweet-cheesecake', name: 'San Sebastian Cheesecake', price: 4.80 },
+    { id: 'sweet-cheesecake-choc', name: 'San Sebastian Cheesecake, Chocolate Cream', price: 6.00 },
+    { id: 'sweet-banana-cream', name: 'NY Banana Chocolate Cream', price: 3.80 },
+    { id: 'sweet-choc-dip', name: 'Chocolate Cream Dip', price: 1.50 },
+  ];
+  for (const s of sweetsData) {
+    await prisma.menuItem.upsert({
+      where: { id: s.id },
+      update: {},
+      create: {
+        id: s.id,
+        categoryId: categories['Sweets'].id,
+        name: s.name,
+        description: 'Homemade gourmet dessert.',
+        basePrice: s.price,
+        imageUrl: '/burger_hero.png',
+        isAvailable: true,
+      },
+    });
+  }
 
-  // Combo Item - Super Richi Combo Meal
-  const comboItem = await prisma.menuItem.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164b4' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164b4',
-      categoryId: categories['Burgers'].id,
-      name: 'Super Richi Combo Meal',
-      description: 'A complete meal containing a Classic Burger and a choice of cold drink.',
-      basePrice: 14.00,
-      isAvailable: true,
-    },
-  });
+  // Seed Toppings, Spices, Sauces
+  const toppingsData = [
+    { id: 'top-patty-classic', name: 'Patty Prime Beef Classic (100g)', price: 3.00 },
+    { id: 'top-patty-regular', name: 'Patty Prime Beef Regular (140g)', price: 4.50 },
+    { id: 'top-bacon', name: 'Bacon (Gepökelter Rinderspeck)', price: 2.00 },
+    { id: 'top-rostzwiebeln', name: 'Röstzwiebeln', price: 1.00 },
+    { id: 'top-cheddar', name: 'Käse American Cheddar', price: 1.00 },
+    { id: 'top-jalapenos', name: 'Jalapenos', price: 1.00 },
+  ];
+  for (const t of toppingsData) {
+    await prisma.menuItem.upsert({
+      where: { id: t.id },
+      update: {},
+      create: {
+        id: t.id,
+        categoryId: categories['Toppings'].id,
+        name: t.name,
+        description: 'Extra burger topping.',
+        basePrice: t.price,
+        imageUrl: '/burger_hero.png',
+        isAvailable: true,
+      },
+    });
+  }
 
-  // Combo Group for drink choice
-  const drinkChoiceGroup = await prisma.comboGroup.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164c9' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164c9',
-      name: 'Select Your Drink',
-      minSelection: 1,
-      maxSelection: 1,
-    },
-  });
+  const spicesData = [
+    { id: 'spice-habanero', name: 'Habanero Pepper 🌶️🌶️ (350K Scoville)', price: 1.00 },
+    { id: 'spice-bhut-jolokia', name: 'But Jolokia Chilli 🌶️🌶️🌶️ (1.5M Scoville)', price: 1.50 },
+    { id: 'spice-carolina-reaper', name: 'Carolina Reaper 🌶️🌶️🌶️🌶️ (2.7M Scoville)', price: 2.50 },
+  ];
+  for (const sp of spicesData) {
+    await prisma.menuItem.upsert({
+      where: { id: sp.id },
+      update: {},
+      create: {
+        id: sp.id,
+        categoryId: categories['Spices'].id,
+        name: sp.name,
+        description: 'Extreme chilli spice enhancement.',
+        basePrice: sp.price,
+        imageUrl: '/burger_hero.png',
+        isAvailable: true,
+      },
+    });
+  }
 
-  // Associate combo item with group
-  await prisma.itemComboGroup.upsert({
-    where: {
-      itemId_comboGroupId: { itemId: comboItem.id, comboGroupId: drinkChoiceGroup.id },
-    },
-    update: {},
-    create: {
-      itemId: comboItem.id,
-      comboGroupId: drinkChoiceGroup.id,
-    },
-  });
-
-  // Add choices to the combo group
-  await prisma.comboChoice.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164d9' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164d9',
-      comboGroupId: drinkChoiceGroup.id,
-      itemId: coke.id,
-      additionalPrice: 0.00,
-    },
-  });
-
-  await prisma.comboChoice.upsert({
-    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164da' },
-    update: {},
-    create: {
-      id: 'd3b07384-d113-4e4e-862d-0b32525164da',
-      comboGroupId: drinkChoiceGroup.id,
-      itemId: water.id,
-      additionalPrice: -0.50,
-    },
-  });
-
-  console.log('Seeded menu items, variations, addons links, spice levels, and combo configurations.');
+  const saucesData = [
+    { id: 'sauce-chimi-mayo', name: 'Chimi Mayo', price: 2.00 },
+    { id: 'sauce-truffle-mayo', name: 'Trüffel Mayo', price: 1.50 },
+    { id: 'sauce-oh-g', name: 'Oh G Sauce', price: 1.00 },
+    { id: 'sauce-bbq', name: 'BBQ Sauce', price: 1.00 },
+    { id: 'sauce-ketchup', name: 'Ketchup', price: 0.80 },
+    { id: 'sauce-mayo', name: 'Mayo', price: 0.80 },
+    { id: 'sauce-senf', name: 'Senf', price: 0.80 },
+  ];
+  for (const sc of saucesData) {
+    await prisma.menuItem.upsert({
+      where: { id: sc.id },
+      update: {},
+      create: {
+        id: sc.id,
+        categoryId: categories['Saucen'].id,
+        name: sc.name,
+        description: 'Signature dip & sauce.',
+        basePrice: sc.price,
+        imageUrl: '/burger_hero.png',
+        isAvailable: true,
+      },
+    });
+  }
 
   // 14. Seed Pricing Groups
   const happyHour = await prisma.pricingGroup.upsert({
@@ -497,8 +624,8 @@ async function main() {
     create: {
       id: 'd3b07384-d113-4e4e-862d-0b32525164dc',
       pricingGroupId: happyHour.id,
-      itemId: margherita.id,
-      price: 8.00,
+      itemId: mightyOh.id,
+      price: 15.50,
     },
   });
   console.log('Seeded pricing groups and options.');
@@ -731,7 +858,7 @@ async function main() {
         shortId: 'OR-9202',
         locationId: demoLocation.id,
         customerName: 'Marco Rossi',
-        orderType: 'DINE_IN',
+        orderType: 'TAKEAWAY',
         status: 'PREPARING',
         tableId: table1 ? table1.id : undefined,
         subtotal: 18.20,
@@ -775,7 +902,7 @@ async function main() {
         shortId: 'OR-9199',
         locationId: demoLocation.id,
         customerName: 'Emma Watson',
-        orderType: 'DINE_IN',
+        orderType: 'TAKEAWAY',
         status: 'COMPLETED',
         tableId: table2 ? table2.id : undefined,
         subtotal: 28.50,

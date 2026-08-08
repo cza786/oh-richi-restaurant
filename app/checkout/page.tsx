@@ -14,6 +14,9 @@ export default function CheckoutPage() {
     deliveryFee,
     orderType,
     setOrderType,
+    deliveryAddress,
+    setDeliveryAddress,
+    selectedBranch,
     appliedCoupon,
     appliedRedemption,
     applyCouponCode,
@@ -30,7 +33,20 @@ export default function CheckoutPage() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
+  const [address, setAddressState] = useState(deliveryAddress || '');
+
+  // Keep address synchronized with context
+  useEffect(() => {
+    if (deliveryAddress && !address) {
+      setAddressState(deliveryAddress);
+    }
+  }, [deliveryAddress]);
+
+  const setAddress = (val: string) => {
+    setAddressState(val);
+    setDeliveryAddress(val);
+  };
+
   const [deliveryTime, setDeliveryTime] = useState('ASAP');
   const [paymentMethod, setPaymentMethod] = useState('CARD');
   const [promoInput, setPromoInput] = useState('');
@@ -129,8 +145,8 @@ export default function CheckoutPage() {
         deliveryFee,
         discountAmount,
         totalAmount,
-        deliveryAddress: orderType === 'DELIVERY' ? address : null,
-        specialInstructions: `Time selected: ${deliveryTime}`,
+        deliveryAddress: orderType === 'DELIVERY' ? (address || deliveryAddress) : selectedBranch,
+        specialInstructions: `Time selected: ${deliveryTime}${orderType === 'TAKEAWAY' ? ` | Branch: ${selectedBranch}` : ''}`,
         orderItems: orderItemsPayload,
         couponCode: appliedCoupon?.code || null,
         redemptionCode: appliedRedemption?.redemptionCode || null,
@@ -292,7 +308,14 @@ export default function CheckoutPage() {
       </div>
 
       <div className="richi-checkout-desktop" style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
-        <h1 className="heading-bebas" style={{ fontSize: '2.5rem', marginBottom: '24px' }}>Checkout</h1>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <span style={{ color: '#ff9500', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>
+            CHECKOUT & PAYMENT
+          </span>
+          <h1 style={{ fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', margin: '8px 0', textTransform: 'uppercase' }}>
+            CONFIRM YOUR ORDER
+          </h1>
+        </div>
 
         <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px', alignItems: 'start' }}>
           
@@ -300,8 +323,14 @@ export default function CheckoutPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
             {/* 1. Order Type Toggles */}
-            <div className="auth-card" style={{ maxWidth: '100%', padding: '24px' }}>
-              <h3 className="heading-bebas" style={{ fontSize: '1.2rem', marginBottom: '16px', color: 'var(--accent-gold)' }}>1. Order Type</h3>
+            <div style={{
+              backgroundColor: '#121218',
+              border: '1px solid #282838',
+              borderRadius: '20px',
+              padding: '24px',
+              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5)',
+            }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '16px', color: '#ff9500', textTransform: 'uppercase' }}>1. Order Type</h3>
               <div className="order-type-tabs" style={{ display: 'flex', gap: '8px', padding: '4px' }}>
                 <button className={`order-type-tab ${orderType === 'DELIVERY' ? 'active' : ''}`} onClick={() => setOrderType('DELIVERY')}>
                   Delivery
@@ -465,8 +494,16 @@ export default function CheckoutPage() {
           </div>
 
           {/* RIGHT COLUMN: ORDER SUMMARY */}
-          <div className="auth-card" style={{ maxWidth: '100%', padding: '28px', position: 'sticky', top: '96px' }}>
-            <h3 className="heading-bebas" style={{ fontSize: '1.3rem', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>Your Order</h3>
+          <div style={{
+            backgroundColor: '#121218',
+            border: '1px solid #282838',
+            borderRadius: '20px',
+            padding: '28px',
+            position: 'sticky',
+            top: '96px',
+            boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5)',
+          }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ff9500', marginBottom: '20px', borderBottom: '1px solid #282838', paddingBottom: '10px', textTransform: 'uppercase' }}>Your Order</h3>
             
             {/* Item list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '280px', overflowY: 'auto', marginBottom: '20px', paddingRight: '4px' }}>
@@ -475,13 +512,13 @@ export default function CheckoutPage() {
                 return (
                   <div key={item.id} style={{ display: 'flex', justifyItems: 'center', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                     <div>
-                      <span style={{ fontWeight: 600 }}>{item.quantity}x</span> {item.name}
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px' }}>
+                      <span style={{ fontWeight: 800, color: '#ff9500' }}>{item.quantity}x</span> <span style={{ color: '#ffffff', fontWeight: 700 }}>{item.name}</span>
+                      <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '2px' }}>
                         {item.variation && `${item.variation.name}`}
                         {item.spiceLevel && ` • Spice: ${item.spiceLevel.name}`}
                       </p>
                     </div>
-                    <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    <span style={{ fontWeight: 800, color: '#ffffff' }}>
                       €{(itemSinglePrice * item.quantity).toFixed(2)}
                     </span>
                   </div>
@@ -490,7 +527,7 @@ export default function CheckoutPage() {
             </div>
 
             {/* Calculations */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid var(--border)', paddingTop: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid #282838', paddingTop: '20px', marginBottom: '20px' }}>
               <div className="summary-row">
                 <span>Subtotal</span>
                 <span>€{cartSubtotal.toFixed(2)}</span>
@@ -507,26 +544,26 @@ export default function CheckoutPage() {
               </div>
 
               {appliedCoupon && (
-                <div className="summary-row discount-row" style={{ color: 'var(--success)', display: 'flex', justifyContent: 'space-between' }}>
+                <div className="summary-row discount-row" style={{ color: '#22c55e', display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     Coupon ({appliedCoupon.code})
-                    <button onClick={removeCoupon} style={{ background: 'none', border: 'none', color: 'var(--accent-red)', cursor: 'pointer', fontSize: '0.75rem' }}>✕</button>
+                    <button onClick={removeCoupon} style={{ background: 'none', border: 'none', color: 'var(--accent-red, #ff3b30)', cursor: 'pointer', fontSize: '0.75rem' }}>✕</button>
                   </span>
                   <span>- €{appliedCoupon.discountAmount.toFixed(2)}</span>
                 </div>
               )}
 
               {appliedRedemption && (
-                <div className="summary-row discount-row" style={{ color: 'var(--success)', display: 'flex', justifyContent: 'space-between' }}>
+                <div className="summary-row discount-row" style={{ color: '#22c55e', display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     Reward ({appliedRedemption.reward.name})
-                    <button onClick={removeRedemption} style={{ background: 'none', border: 'none', color: 'var(--accent-red)', cursor: 'pointer', fontSize: '0.75rem' }}>✕</button>
+                    <button onClick={removeRedemption} style={{ background: 'none', border: 'none', color: 'var(--accent-red, #ff3b30)', cursor: 'pointer', fontSize: '0.75rem' }}>✕</button>
                   </span>
                   <span>- €{appliedRedemption.reward.discountAmount.toFixed(2)}</span>
                 </div>
               )}
 
-              <div className="summary-row total-row" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: '12px', marginTop: '4px' }}>
+              <div className="summary-row total-row" style={{ fontSize: '1.4rem', fontWeight: 900, color: '#ff9500', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #282838', paddingTop: '12px', marginTop: '4px' }}>
                 <span>Total</span>
                 <span>€{cartTotal.toFixed(2)}</span>
               </div>
@@ -537,34 +574,68 @@ export default function CheckoutPage() {
               <input
                 type="text"
                 placeholder="Promo code"
-                className="form-input"
-                style={{ height: '38px', fontSize: '0.85rem' }}
+                style={{
+                  flex: 1,
+                  height: '42px',
+                  fontSize: '0.85rem',
+                  padding: '0 12px',
+                  borderRadius: '10px',
+                  backgroundColor: '#0a0a0f',
+                  border: '1px solid #282838',
+                  color: '#ffffff',
+                  outline: 'none',
+                }}
                 value={promoInput}
                 onChange={(e) => setPromoInput(e.target.value)}
               />
-              <button type="submit" className="btn btn-secondary" style={{ width: 'auto', padding: '0 16px', height: '38px', fontSize: '0.85rem' }}>
+              <button
+                type="submit"
+                style={{
+                  width: 'auto',
+                  padding: '0 18px',
+                  height: '42px',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  backgroundColor: '#1c1c28',
+                  border: '1px solid #3a3a4c',
+                  color: '#ffffff',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                }}
+              >
                 Apply
               </button>
             </form>
-            {promoError && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '-12px', marginBottom: '16px' }}>{promoError}</p>}
+            {promoError && <p style={{ color: 'var(--accent-red, #ff3b30)', fontSize: '0.8rem', marginTop: '-12px', marginBottom: '16px' }}>{promoError}</p>}
 
             {/* Loyalty points info */}
             {user && (
-              <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.05)', border: '1px dashed rgba(34, 197, 94, 0.2)', padding: '12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+              <div style={{ backgroundColor: 'rgba(255, 149, 0, 0.1)', border: '1px dashed #ff9500', padding: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
                 <span style={{ fontSize: '1.4rem' }}>🎉</span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  You will earn <strong>{potentialPoints} points</strong> with this order!
+                <span style={{ fontSize: '0.8rem', color: '#ffffff' }}>
+                  You will earn <strong style={{ color: '#ff9500' }}>{potentialPoints} points</strong> with this order!
                 </span>
               </div>
             )}
 
             <button
-              className="btn btn-primary pulse-glow"
               onClick={handlePlaceOrder}
               disabled={loading}
-              style={{ height: '48px', fontSize: '1rem', fontWeight: 600 }}
+              style={{
+                width: '100%',
+                height: '54px',
+                fontSize: '1rem',
+                fontWeight: 900,
+                color: '#ffffff',
+                background: 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)',
+                border: 'none',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(255, 140, 0, 0.45)',
+                letterSpacing: '0.5px',
+              }}
             >
-              {loading ? 'Processing...' : `Place Order • €${cartTotal.toFixed(2)}`}
+              {loading ? 'Processing...' : `PLACE ORDER • €${cartTotal.toFixed(2)}`}
             </button>
           </div>
 

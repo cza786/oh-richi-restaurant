@@ -21,8 +21,6 @@ export async function calculateEarnedPoints(
     return 0; // No rule configured
   }
 
-  // Check if earning is allowed for the order type
-  if (orderType === 'DINE_IN' && !rule.earnOnDineIn) return 0;
   if (orderType === 'TAKEAWAY' && !rule.earnOnTakeAway) return 0;
   if (orderType === 'DELIVERY' && !rule.earnOnDelivery) return 0;
 

@@ -45,7 +45,7 @@ export const createOrderSchema = z.object({
   customerPhone: z.string().optional().nullable(),
   customerEmail: z.string().trim().email('Invalid customer email address.').optional().nullable(),
   tableId: z.string().optional().nullable(),
-  orderType: z.enum(['DINE_IN', 'TAKEAWAY', 'DELIVERY']),
+  orderType: z.enum(['TAKEAWAY', 'DELIVERY']),
   subtotal: numericField,
   taxAmount: numericField.optional().default(0),
   deliveryFee: numericField.optional().default(0),

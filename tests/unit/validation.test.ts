@@ -39,7 +39,7 @@ describe('Zod Request Body Schema Validation (lib/schemas.ts)', () => {
     it('should validate correct order checkout payload', () => {
       const validOrder = {
         customerName: 'Alice Smith',
-        orderType: 'DINE_IN',
+        orderType: 'DELIVERY',
         subtotal: 25.0,
         totalAmount: 25.0,
         orderItems: [
@@ -56,7 +56,7 @@ describe('Zod Request Body Schema Validation (lib/schemas.ts)', () => {
       expect(result).not.toBeInstanceOf(NextResponse);
       if (!(result instanceof NextResponse)) {
         expect(result.data.customerName).toBe('Alice Smith');
-        expect(result.data.orderType).toBe('DINE_IN');
+        expect(result.data.orderType).toBe('DELIVERY');
       }
     });
 

@@ -16,7 +16,7 @@ describe('Loyalty Service Business Logic (lib/loyaltyService.ts)', () => {
   it('should return 0 points when no active loyalty rule exists', async () => {
     vi.mocked(db.loyaltyRule.findFirst).mockResolvedValueOnce(null);
 
-    const points = await calculateEarnedPoints(50, 'DINE_IN', 50, 5, 0);
+    const points = await calculateEarnedPoints(50, 'DELIVERY', 50, 5, 0);
     expect(points).toBe(0);
   });
 
@@ -33,7 +33,7 @@ describe('Loyalty Service Business Logic (lib/loyaltyService.ts)', () => {
     } as any);
 
     // subtotal = 40, discount = 5 -> base = 35 -> points = 35 * 2 = 70
-    const points = await calculateEarnedPoints(40, 'DINE_IN', 40, 4, 5);
+    const points = await calculateEarnedPoints(40, 'DELIVERY', 40, 4, 5);
     expect(points).toBe(70);
   });
 
@@ -50,7 +50,7 @@ describe('Loyalty Service Business Logic (lib/loyaltyService.ts)', () => {
     } as any);
 
     // Order total = 15 < minimumRequired 25
-    const points = await calculateEarnedPoints(15, 'DINE_IN', 15, 1.5, 0);
+    const points = await calculateEarnedPoints(15, 'DELIVERY', 15, 1.5, 0);
     expect(points).toBe(0);
   });
 
