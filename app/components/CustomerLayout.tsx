@@ -42,6 +42,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeHash, setActiveHash] = useState('');
   const [user, setUser] = useState<any | null>(null);
+  const [logoUrl, setLogoUrl] = useState('');
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
 
@@ -73,6 +74,10 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
   useEffect(() => {
     setMounted(true);
+    fetch('/api/settings')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => data?.logoUrl && setLogoUrl(data.logoUrl))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -151,12 +156,22 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           >
             <Icon name="menu" />
           </button>
-          <Link href="/" className="richi-logo" aria-label="Oh Richi home">
-            Oh<span>Richi</span><i>.</i>
+          <Link href="/" className="richi-logo-wrap" aria-label="Oh Richi home" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+            {logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt="Oh Richi Logo" 
+                style={{ height: '38px', maxHeight: '42px', width: 'auto', objectFit: 'contain' }}
+                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+              />
+            ) : (
+              <span className="richi-logo">Oh<span>Richi</span><i>.</i></span>
+            )}
           </Link>
 
           <nav className="richi-desktop-nav" aria-label="Main navigation" suppressHydrationWarning>
             <Link href="/menu" className={mounted && safePath.startsWith('/menu') ? 'active' : ''}>MENU</Link>
+            <Link href="/orders" className={mounted && safePath.startsWith('/orders') ? 'active' : ''}>ORDER HISTORY</Link>
             <Link href="/promotions" className={mounted && safePath === '/promotions' ? 'active' : ''}>PROMOTIONS</Link>
             <Link href="/rewards" className={mounted && safePath === '/rewards' ? 'active' : ''}>REWARDS</Link>
             <Link href="/track-order" className={mounted && safePath.startsWith('/track-order') ? 'active' : ''}>TRACK ORDER</Link>

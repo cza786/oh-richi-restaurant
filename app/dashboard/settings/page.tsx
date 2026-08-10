@@ -11,6 +11,8 @@ export default function SettingsPage() {
   const [restaurantId, setRestaurantId] = useState('');
   const [locationId, setLocationId] = useState('');
   const [restaurantName, setRestaurantName] = useState('Oh Richi');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [phone, setPhone] = useState('+39 06 1234567');
   const [email, setEmail] = useState('main@ohrichi.com');
   const [address, setAddress] = useState('123 Via Roma, Rome, Italy');
@@ -28,6 +30,7 @@ export default function SettingsPage() {
         setRestaurantId(data.id);
         setLocationId(data.locationId);
         setRestaurantName(data.name);
+        setLogoUrl(data.logoUrl || '');
         setPhone(data.phone);
         setEmail(data.email);
         setAddress(data.address);
@@ -46,6 +49,36 @@ export default function SettingsPage() {
     fetchSettings();
   }, []);
 
+  // Upload Logo File
+  const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      setUploadingLogo(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch('/api/admin/logo-upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.logoUrl) {
+        setLogoUrl(data.logoUrl);
+        alert('Logo uploaded and set successfully! Saved to top-left corner.');
+      } else {
+        alert(data.error || 'Failed to upload logo.');
+      }
+    } catch (err) {
+      console.error('Logo upload error:', err);
+      alert('An error occurred while uploading the logo image.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   // Save Settings to Database
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,13 +90,14 @@ export default function SettingsPage() {
           id: restaurantId,
           locationId,
           name: restaurantName,
+          logoUrl,
           phone,
           email,
           address,
         }),
       });
       if (res.ok) {
-        alert('Restaurant configurations saved in PostgreSQL database successfully!');
+        alert('Restaurant brand configurations & logo saved successfully!');
       }
     } catch (err) {
       console.error(err);
@@ -167,8 +201,111 @@ export default function SettingsPage() {
               </div>
             ) : (
               <form onSubmit={handleSaveProfile}>
-                <h3 className="card-title-text" style={{ marginBottom: '20px' }}>General Profile</h3>
+                <h3 className="card-title-text" style={{ marginBottom: '20px' }}>General Profile & Brand Logo</h3>
                 
+                {/* Logo Management Box */}
+                <div style={{
+                  padding: '16px',
+                  backgroundColor: 'var(--bg-tertiary, #1a1a24)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border, #2e2e3e)',
+                  marginBottom: '24px',
+                }}>
+                  <label className="form-label" style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>
+                    Top-Left Header Logo (Admin Managed)
+                  </label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                    Upload or specify a custom brand logo image to display on the top-left corner of the website and admin dashboard header.
+                  </p>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                    {/* Current Logo Preview Box */}
+                    <div style={{
+                      width: '140px',
+                      height: '54px',
+                      backgroundColor: '#000000',
+                      borderRadius: '6px',
+                      border: '1px dashed #ff9500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '6px 12px',
+                      position: 'relative',
+                    }}>
+                      {logoUrl ? (
+                        <img 
+                          src={logoUrl} 
+                          alt="Brand Logo Preview" 
+                          style={{ maxHeight: '42px', maxWidth: '100%', objectFit: 'contain' }}
+                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                        />
+                      ) : (
+                        <span style={{ fontFamily: 'sans-serif', fontWeight: 'bold', fontSize: '1.1rem', color: 'white' }}>
+                          OH<span style={{ color: '#ff9500' }}>RICHI.</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <label 
+                          htmlFor="logo-upload-input"
+                          className="btn btn-primary"
+                          style={{
+                            padding: '8px 16px',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            width: 'auto',
+                            margin: 0,
+                          }}
+                        >
+                          {uploadingLogo ? 'Uploading...' : '📁 Upload New Logo'}
+                        </label>
+                        <input 
+                          id="logo-upload-input"
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleLogoFileUpload}
+                          disabled={uploadingLogo}
+                          style={{ display: 'none' }}
+                        />
+
+                        {logoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setLogoUrl('')}
+                            style={{
+                              padding: '8px 12px',
+                              fontSize: '0.8rem',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #ff4d4f',
+                              color: '#ff4d4f',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Reset to Default
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Or paste direct image URL (e.g. https://...)" 
+                          value={logoUrl} 
+                          onChange={(e) => setLogoUrl(e.target.value)}
+                          style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Restaurant Name</label>
                   <input type="text" className="form-input" value={restaurantName} onChange={(e) => setRestaurantName(e.target.value)} required />

@@ -20,6 +20,7 @@ export async function GET() {
     return NextResponse.json({
       id: restaurant.id,
       name: restaurant.name,
+      logoUrl: restaurant.logoUrl || '',
       website: restaurant.website || '',
       phone: location?.phone || '',
       email: location?.email || '',
@@ -39,7 +40,7 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, phone, email, address, locationId } = body;
+    const { id, name, logoUrl, phone, email, address, locationId } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Restaurant ID is required.' }, { status: 400 });
@@ -50,6 +51,7 @@ export async function PUT(request: Request) {
       where: { id },
       data: {
         name: name,
+        ...(logoUrl !== undefined && { logoUrl }),
       },
     });
 

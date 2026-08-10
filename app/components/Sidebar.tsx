@@ -19,6 +19,14 @@ interface SidebarProps {
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [logoUrl, setLogoUrl] = React.useState('');
+
+  React.useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => data?.logoUrl && setLogoUrl(data.logoUrl))
+      .catch(() => undefined);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -131,10 +139,21 @@ export default function Sidebar({ user }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ fontSize: '1.5rem' }}>🍔</div>
-          <span className="sidebar-logo">OH RICHI<span className="sidebar-logo-dot">.</span></span>
-        </div>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt="Brand Logo" 
+              style={{ height: '36px', maxHeight: '42px', width: 'auto', objectFit: 'contain' }}
+              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+            />
+          ) : (
+            <>
+              <div style={{ fontSize: '1.5rem' }}>🍔</div>
+              <span className="sidebar-logo">OH RICHI<span className="sidebar-logo-dot">.</span></span>
+            </>
+          )}
+        </Link>
       </div>
       
       <nav className="sidebar-menu">

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 const DEMO_PASSWORD_HASH = '$2b$10$PTkEwlYzc3hQutWaDYvpcOXz28y/4HaBXN/MGZwM8Ci464T3pBwpS'; // password123
@@ -8,8 +9,9 @@ async function main() {
 
   // 1. Seed Roles
   const rolesData = [
-    { name: 'OWNER', description: 'Restaurant owner with full access to their restaurant settings, menu, staff, and analytics.' },
+    { name: 'SUPER_ADMIN', description: 'Super Admin with total system control, ability to create/delete admins and staff.' },
     { name: 'ADMIN', description: 'System administrator with global settings access, database management, and system configuration.' },
+    { name: 'OWNER', description: 'Restaurant owner with full access to their restaurant settings, menu, staff, and analytics.' },
     { name: 'MANAGER', description: 'Restaurant manager responsible for daily operations, menu adjustments, and staff management.' },
     { name: 'KITCHEN_STAFF', description: 'Kitchen staff with access to order preparation queue and menu item availability.' },
     { name: 'CASHIER', description: 'Cashier with access to order management, payment processing, and table status.' },
@@ -25,6 +27,46 @@ async function main() {
     });
   }
   console.log(`Seeded ${Object.keys(roles).length} roles.`);
+
+  // Seeding/Bootstrap First-Time Super Admin
+  const initialAdminEmail = process.env.INITIAL_ADMIN_EMAIL || 'superadmin@ohrichi.com';
+  const initialAdminPassword = process.env.INITIAL_ADMIN_PASSWORD || 'SuperAdminSecret123!';
+
+  const existingSuperAdmin = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { role: 'super_admin' },
+        { userRoles: { some: { role: { name: 'SUPER_ADMIN' } } } },
+      ],
+    },
+  });
+
+  if (!existingSuperAdmin) {
+    console.log(`No super_admin user found. Seeding initial super_admin (${initialAdminEmail})...`);
+    const hashedPassword = await bcrypt.hash(initialAdminPassword, 12);
+
+    const superAdminUser = await prisma.user.create({
+      data: {
+        email: initialAdminEmail.toLowerCase(),
+        passwordHash: hashedPassword,
+        firstName: 'Super',
+        lastName: 'Admin',
+        role: 'super_admin',
+        isActive: true,
+      },
+    });
+
+    await prisma.userRole.create({
+      data: {
+        userId: superAdminUser.id,
+        roleId: roles['SUPER_ADMIN'].id,
+      },
+    });
+
+    console.log(`Successfully seeded initial super_admin account: ${initialAdminEmail}`);
+  } else {
+    console.log('Super admin account already exists.');
+  }
 
   // 2. Seed Permissions
   const permissionsData = [
@@ -50,6 +92,7 @@ async function main() {
 
   // 3. Link Roles and Permissions (RolePermission)
   const rolePermissionsMap: Record<string, string[]> = {
+    SUPER_ADMIN: ['manage:system', 'manage:restaurant', 'manage:users', 'manage:menu', 'manage:orders', 'read:orders', 'view:reports', 'manage:settings'],
     ADMIN: ['manage:system', 'manage:users', 'view:reports'],
     OWNER: ['manage:restaurant', 'manage:users', 'manage:menu', 'manage:orders', 'read:orders', 'view:reports', 'manage:settings'],
     MANAGER: ['manage:users', 'manage:menu', 'manage:orders', 'read:orders', 'view:reports', 'manage:settings'],
@@ -78,23 +121,24 @@ async function main() {
 
   // 4. Seed Users
   const usersData = [
-    { email: 'admin@ohrichi.com', firstName: 'System', lastName: 'Admin', roleName: 'ADMIN' },
-    { email: 'owner@ohrichi.com', firstName: 'Richi', lastName: 'Owner', roleName: 'OWNER' },
-    { email: 'manager@ohrichi.com', firstName: 'John', lastName: 'Manager', roleName: 'MANAGER' },
-    { email: 'kitchen@ohrichi.com', firstName: 'Mario', lastName: 'Chef', roleName: 'KITCHEN_STAFF' },
-    { email: 'cashier@ohrichi.com', firstName: 'Sarah', lastName: 'Cashier', roleName: 'CASHIER' },
+    { email: 'admin@ohrichi.com', firstName: 'System', lastName: 'Admin', roleName: 'ADMIN', phone: '+390123456781' },
+    { email: 'owner@ohrichi.com', firstName: 'Richi', lastName: 'Owner', roleName: 'OWNER', phone: '+390123456782' },
+    { email: 'manager@ohrichi.com', firstName: 'John', lastName: 'Manager', roleName: 'MANAGER', phone: '+390123456783' },
+    { email: 'kitchen@ohrichi.com', firstName: 'Mario', lastName: 'Chef', roleName: 'KITCHEN_STAFF', phone: '+390123456784' },
+    { email: 'cashier@ohrichi.com', firstName: 'Sarah', lastName: 'Cashier', roleName: 'CASHIER', phone: '+390123456785' },
   ];
 
   for (const userData of usersData) {
     const user = await prisma.user.upsert({
       where: { email: userData.email },
-      update: { passwordHash: DEMO_PASSWORD_HASH },
+      update: { passwordHash: DEMO_PASSWORD_HASH, role: userData.roleName.toLowerCase() },
       create: {
         email: userData.email,
         passwordHash: DEMO_PASSWORD_HASH,
         firstName: userData.firstName,
         lastName: userData.lastName,
-        phone: '+390123456789',
+        phone: userData.phone,
+        role: userData.roleName.toLowerCase(),
         isActive: true,
       },
     });

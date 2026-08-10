@@ -72,9 +72,14 @@ export async function POST(request: Request) {
       }
     }
 
-    // Find user and include roles
-    const user = await db.user.findUnique({
-      where: { email },
+    // Find user by email or phone number
+    const user = await db.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { phone: email },
+        ],
+      },
       include: {
         userRoles: {
           include: {

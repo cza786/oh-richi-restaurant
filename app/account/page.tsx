@@ -191,13 +191,30 @@ export default function AccountPage() {
             {/* TAB 2: MY ORDERS */}
             {activeTab === 'orders' && (
               <div className="fade-in">
-                <h3 className="heading-bebas" style={{ fontSize: '1.4rem', color: 'var(--accent-gold)', marginBottom: '20px' }}>My Orders ({orders.length})</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 className="heading-bebas" style={{ fontSize: '1.4rem', color: 'var(--accent-gold)' }}>My Orders ({orders.length})</h3>
+                  <button className="btn btn-primary" onClick={() => router.push('/orders')} style={{ width: 'auto', padding: '6px 14px', fontSize: '0.8rem' }}>
+                    View Full Order History Screen →
+                  </button>
+                </div>
+
                 {orders.length === 0 ? (
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>You have no orders yet.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {orders.map((order) => (
-                      <div key={order.id} style={{ backgroundColor: 'var(--bg-primary)', padding: '20px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                      <div 
+                        key={order.id} 
+                        onClick={() => router.push('/orders')}
+                        style={{ 
+                          backgroundColor: 'var(--bg-primary)', 
+                          padding: '20px', 
+                          borderRadius: '10px', 
+                          border: '1px solid var(--border)',
+                          cursor: 'pointer',
+                          transition: 'transform 0.15s ease, border-color 0.15s ease',
+                        }}
+                      >
                         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
                           <div>
                             <p style={{ fontWeight: 700, fontSize: '1rem' }}>Order #{order.shortId}</p>
@@ -225,8 +242,9 @@ export default function AccountPage() {
                           ))}
                         </div>
 
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                          <button className="btn btn-secondary" onClick={() => router.push(`/track-order?shortId=${order.shortId}`)} style={{ width: 'auto', padding: '8px 20px', fontSize: '0.8rem', height: '36px' }}>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--accent-gold)' }}>👉 Tap to see full itemized receipt & breakdown</span>
+                          <button className="btn btn-secondary" onClick={(e) => { e.stopPropagation(); router.push(`/track-order?shortId=${order.shortId}`); }} style={{ width: 'auto', padding: '8px 20px', fontSize: '0.8rem', height: '36px' }}>
                             Track Status
                           </button>
                         </div>
