@@ -1,11 +1,28 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
-// GET all menu items
-export async function GET() {
+// GET all menu items (optional filter by restaurant slug or restaurantId)
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const slug = searchParams.get('slug');
+    const restaurantId = searchParams.get('restaurantId');
+
+    const whereClause: any = { isActive: true };
+
+    if (restaurantId) {
+      whereClause.restaurantId = restaurantId;
+    } else if (slug) {
+      const restaurant = await db.restaurant.findUnique({
+        where: { slug: slug.toLowerCase() },
+      });
+      if (restaurant) {
+        whereClause.restaurantId = restaurant.id;
+      }
+    }
+
     const items = await db.menuItem.findMany({
-      where: { isActive: true },
+      where: whereClause,
       include: {
         category: true,
         variations: {
@@ -67,6 +84,7 @@ export async function POST(request: Request) {
       category = await db.menuCategory.create({
         data: {
           name: catName,
+          restaurantId: location.restaurantId,
           locationId: location.id,
           isActive: true,
         },
@@ -76,6 +94,7 @@ export async function POST(request: Request) {
     const newItem = await db.menuItem.create({
       data: {
         name,
+        restaurantId: category.restaurantId,
         categoryId: category.id,
         basePrice: Number(basePrice),
         description: description || '',

@@ -2,16 +2,25 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { validateDateRange } from '@/lib/discountService';
 
-// GET all active coupons
-export async function GET() {
+// GET active coupons (optional filter by restaurantId)
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const restaurantId = searchParams.get('restaurantId');
     const now = new Date();
+
+    const whereClause: any = {
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+    };
+
+    if (restaurantId) {
+      whereClause.restaurantId = restaurantId;
+    }
+
     const coupons = await db.coupon.findMany({
-      where: {
-        isActive: true,
-        startDate: { lte: now },
-        endDate: { gte: now },
-      },
+      where: whereClause,
       orderBy: {
         code: 'asc',
       },
@@ -34,7 +43,7 @@ export async function GET() {
 // POST validate coupon code
 export async function POST(request: Request) {
   try {
-    const { code, subtotal, customerId } = await request.json();
+    const { code, subtotal, customerId, restaurantId } = await request.json();
 
     if (!code) {
       return NextResponse.json({ error: 'Coupon code is required.' }, { status: 400 });
@@ -43,8 +52,13 @@ export async function POST(request: Request) {
     const uppercaseCode = code.trim().toUpperCase();
     const now = new Date();
 
-    const coupon = await db.coupon.findUnique({
-      where: { code: uppercaseCode },
+    const couponWhere: any = { code: uppercaseCode };
+    if (restaurantId) {
+      couponWhere.restaurantId = restaurantId;
+    }
+
+    const coupon = await db.coupon.findFirst({
+      where: couponWhere,
     });
 
     if (!coupon || !coupon.isActive) {

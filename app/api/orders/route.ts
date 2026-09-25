@@ -6,10 +6,28 @@ import { createOrderSchema, updateOrderStatusSchema, validateBody } from '@/lib/
 import { broadcastOrderCreated, broadcastOrderUpdated } from '@/lib/events';
 import jwt from 'jsonwebtoken';
 
-// GET all orders (Pure read query - auto-seeding moved to prisma/seed.ts)
-export async function GET() {
+// GET orders (optional filter by restaurantId or slug)
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const restaurantId = searchParams.get('restaurantId');
+    const slug = searchParams.get('slug');
+
+    const whereClause: any = {};
+
+    if (restaurantId) {
+      whereClause.restaurantId = restaurantId;
+    } else if (slug) {
+      const restaurant = await db.restaurant.findUnique({
+        where: { slug: slug.toLowerCase() },
+      });
+      if (restaurant) {
+        whereClause.restaurantId = restaurant.id;
+      }
+    }
+
     const orders = await db.order.findMany({
+      where: whereClause,
       include: {
         orderItems: {
           include: {
@@ -144,14 +162,18 @@ export async function POST(request: Request) {
     }
 
     // 2. Validate location exists, or use default
-    let resolvedLocationId = locationId;
-    if (!resolvedLocationId) {
-      const loc = await db.restaurantLocation.findFirst();
-      if (!loc) {
+    let targetLocation = null;
+    if (locationId) {
+      targetLocation = await db.restaurantLocation.findUnique({ where: { id: locationId } });
+    }
+    if (!targetLocation) {
+      targetLocation = await db.restaurantLocation.findFirst();
+      if (!targetLocation) {
         return NextResponse.json({ error: 'No restaurant location configured.' }, { status: 400 });
       }
-      resolvedLocationId = loc.id;
     }
+    const resolvedLocationId = targetLocation.id;
+    const resolvedRestaurantId = validationResult.data.restaurantId || targetLocation.restaurantId;
 
     // 3. Generate unique shortId
     let shortId = '';
@@ -173,6 +195,7 @@ export async function POST(request: Request) {
       const order = await tx.order.create({
         data: {
           shortId,
+          restaurantId: resolvedRestaurantId,
           locationId: resolvedLocationId,
           customerId: resolvedCustomerId,
           customerName,

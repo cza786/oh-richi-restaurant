@@ -1,15 +1,24 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const restaurantId = searchParams.get('restaurantId');
     const now = new Date();
+
+    const whereClause: any = {
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+    };
+
+    if (restaurantId) {
+      whereClause.restaurantId = restaurantId;
+    }
+
     const promotions = await db.promotion.findMany({
-      where: {
-        isActive: true,
-        startDate: { lte: now },
-        endDate: { gte: now },
-      },
+      where: whereClause,
       orderBy: {
         priority: 'desc',
       },

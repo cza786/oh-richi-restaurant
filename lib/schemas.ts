@@ -39,6 +39,7 @@ export const orderItemSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
+  restaurantId: z.string().optional().nullable(),
   locationId: z.string().optional().nullable(),
   customerId: z.string().optional().nullable(),
   customerName: z.string().trim().min(1, 'Customer name is required.'),

@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash || '');
     if (!isPasswordValid) {
       recordFailedAttempt(attemptKey);
       const attempts = getFailedAttemptCount(attemptKey);

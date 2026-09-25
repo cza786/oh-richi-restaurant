@@ -30,8 +30,42 @@ model User {
   couponRedemptions  CouponRedemption[]
   promotionRedemptions PromotionRedemption[]
   sessions             Session[]
+  profile              Profile?
+  restaurantMembers    RestaurantMember[]
 
   @@map("users")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  fullName  String?  @map("full_name")
+  avatarUrl String?  @map("avatar_url")
+  phone     String?
+  role      String   @default("CUSTOMER")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model RestaurantMember {
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  userId       String   @map("user_id")
+  role         String   @default("STAFF") // SUPER_ADMIN, OWNER, MANAGER, STAFF
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, userId])
+  @@index([restaurantId])
+  @@index([userId])
+  @@map("restaurant_members")
 }
 
 model OtpToken {
@@ -111,6 +145,7 @@ model RolePermission {
 
 model Restaurant {
   id          String   @id @default(uuid())
+  slug        String   @unique
   name        String
   description String?
   logoUrl     String?  @map("logo_url")
@@ -120,9 +155,13 @@ model Restaurant {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   locations         RestaurantLocation[]
+  menuCategories    MenuCategory[]
+  menuItems         MenuItem[]
+  orders            Order[]
   pricingGroups     PricingGroup[]
   auditLogs         AuditLog[]
   reportAutomations ReportAutomation[]
+  members           RestaurantMember[]
 
   @@map("restaurants")
 }
@@ -156,35 +195,40 @@ model RestaurantLocation {
 }
 
 model MenuCategory {
-  id          String   @id @default(uuid())
-  locationId  String   @map("location_id")
-  name        String
-  description String?
-  sortOrder   Int      @default(0) @map("sort_order")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  locationId   String   @map("location_id")
+  name         String
+  description  String?
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  location  RestaurantLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  menuItems MenuItem[]
+  restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  location            RestaurantLocation  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  menuItems           MenuItem[]
   couponCategories    CouponCategory[]
   promotionCategories PromotionCategory[]
 
+  @@index([restaurantId])
   @@map("menu_categories")
 }
 
 model MenuItem {
-  id          String   @id @default(uuid())
-  categoryId  String   @map("category_id")
-  name        String
-  description String?
-  imageUrl    String?  @map("image_url")
-  basePrice   Decimal  @db.Decimal(10, 2) @map("base_price")
-  isAvailable Boolean  @default(true) @map("is_available")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  restaurantId String   @map("restaurant_id")
+  categoryId   String   @map("category_id")
+  name         String
+  description  String?
+  imageUrl     String?  @map("image_url")
+  basePrice    Decimal  @db.Decimal(10, 2) @map("base_price")
+  isAvailable  Boolean  @default(true) @map("is_available")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
+  restaurant      Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   category        MenuCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   variations      ItemVariation[]
   itemAddons      ItemAddon[]
@@ -196,6 +240,8 @@ model MenuItem {
   couponItems     CouponItem[]
   promotionItems  PromotionItem[]
 
+  @@index([restaurantId])
+  @@index([categoryId])
   @@map("menu_items")
 }
 
@@ -389,6 +435,7 @@ model RestaurantTable {
 model Order {
   id                  String   @id @default(uuid())
   shortId             String   @unique @map("short_id")
+  restaurantId        String   @map("restaurant_id")
   locationId          String   @map("location_id")
   customerId          String?  @map("customer_id")
   customerName        String?  @map("customer_name")
@@ -410,6 +457,7 @@ model Order {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
+  restaurant    Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   location      RestaurantLocation   @relation(fields: [locationId], references: [id], onDelete: Cascade)
   customer      User?                @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: SetNull)
   table         RestaurantTable?     @relation(fields: [tableId], references: [id], onDelete: SetNull)
@@ -427,6 +475,7 @@ model Order {
   couponRedemptions    CouponRedemption[]
   promotionRedemptions PromotionRedemption[]
 
+  @@index([restaurantId])
   @@map("orders")
 }
 

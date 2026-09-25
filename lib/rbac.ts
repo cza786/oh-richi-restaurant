@@ -8,6 +8,8 @@ export const DEFAULT_CUSTOMER_ROLE = 'customer';
 export const VALID_STAFF_ROLES = [
   'super_admin',
   'admin',
+  'owner',
+  'manager',
   'store_manager',
   'kitchen_staff',
   'cashier',

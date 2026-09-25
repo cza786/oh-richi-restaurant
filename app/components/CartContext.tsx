@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface CartItem {
   id: string; // unique key: itemId-variationId-spiceId-addonIds
+  restaurantId?: string;
   itemId: string;
   name: string;
   imageUrl: string | null;
@@ -29,6 +30,8 @@ export interface CartItem {
 
 interface CartContextType {
   cart: CartItem[];
+  restaurantId: string | null;
+  setRestaurantId: (id: string | null) => void;
   addToCart: (item: Omit<CartItem, 'id'>) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
@@ -66,13 +69,14 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [restaurantId, setRestaurantIdState] = useState<string | null>(null);
   const [orderType, setOrderTypeState] = useState<'DELIVERY' | 'TAKEAWAY'>('DELIVERY');
   const [deliveryAddress, setDeliveryAddressState] = useState<string>('221B Baker Street, London');
   const [selectedBranch, setSelectedBranchState] = useState<string>('Oh Richi Central, Via Nazionale 45');
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
   const [appliedRedemption, setAppliedRedemption] = useState<any | null>(null);
 
-  // Load cart from localStorage on mount
+  // Load cart & restaurant scope from localStorage on mount
   useEffect(() => {
     const storedCart = localStorage.getItem('oh_richi_cart');
     if (storedCart) {
@@ -81,6 +85,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.error('Error loading cart:', e);
       }
+    }
+    const storedRestId = localStorage.getItem('oh_richi_restaurant_id');
+    if (storedRestId) {
+      setRestaurantIdState(storedRestId);
     }
     const storedType = localStorage.getItem('oh_richi_ordertype');
     if (storedType && (storedType === 'DELIVERY' || storedType === 'TAKEAWAY')) {
@@ -96,16 +104,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const setRestaurantId = (id: string | null) => {
+    setRestaurantIdState(id);
+    if (id) {
+      localStorage.setItem('oh_richi_restaurant_id', id);
+    } else {
+      localStorage.removeItem('oh_richi_restaurant_id');
+    }
+  };
+
   // Sync cart to localStorage
   const saveCart = (newCart: CartItem[]) => {
     setCart(newCart);
     localStorage.setItem('oh_richi_cart', JSON.stringify(newCart));
+    if (newCart.length === 0) {
+      setRestaurantId(null);
+    }
   };
 
   const setOrderType = (type: 'DELIVERY' | 'TAKEAWAY') => {
     setOrderTypeState(type);
     localStorage.setItem('oh_richi_ordertype', type);
-    // Reset coupon/redemption validation if type changes as rules might differ
     setAppliedCoupon(null);
     setAppliedRedemption(null);
   };
@@ -121,7 +140,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addToCart = (newItem: Omit<CartItem, 'id'>) => {
-    // Generate unique key
+    // Check tenant isolation: If adding item from a different restaurant, clear previous cart
+    if (newItem.restaurantId && restaurantId && newItem.restaurantId !== restaurantId && cart.length > 0) {
+      const confirmReplace = window.confirm(
+        'Your cart contains items from another restaurant. Would you like to clear your cart and add this item?'
+      );
+      if (!confirmReplace) return;
+
+      const addonIds = newItem.addons.map((a) => a.id).sort().join(',');
+      const id = `${newItem.itemId}-${newItem.variation?.id || 'none'}-${newItem.spiceLevel?.id || 'none'}-${addonIds}`;
+      setRestaurantId(newItem.restaurantId);
+      saveCart([{ ...newItem, id }]);
+      return;
+    }
+
+    if (newItem.restaurantId && !restaurantId) {
+      setRestaurantId(newItem.restaurantId);
+    }
+
     const addonIds = newItem.addons.map((a) => a.id).sort().join(',');
     const id = `${newItem.itemId}-${newItem.variation?.id || 'none'}-${newItem.spiceLevel?.id || 'none'}-${addonIds}`;
 
@@ -154,13 +190,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     saveCart([]);
+    setRestaurantId(null);
     setAppliedCoupon(null);
     setAppliedRedemption(null);
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Compute Subtotal
   const cartSubtotal = cart.reduce((sum, item) => {
     const varDiff = item.variation?.priceDifference || 0;
     const spiceDiff = item.spiceLevel?.priceDifference || 0;
@@ -169,7 +205,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return sum + itemPrice * item.quantity;
   }, 0);
 
-  // Calculate delivery fee
   const deliveryFee = orderType === 'DELIVERY' ? 3.00 : 0.00;
 
   const applyCouponCode = async (code: string) => {
@@ -177,14 +212,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch('/api/coupons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, subtotal: cartSubtotal }),
+        body: JSON.stringify({ code, subtotal: cartSubtotal, restaurantId }),
       });
       const data = await res.json();
       if (!res.ok) {
         return { success: false, error: data.error || 'Failed to apply coupon.' };
       }
       setAppliedCoupon(data);
-      setAppliedRedemption(null); // Clear reward if coupon is applied (cannot combine by default)
+      setAppliedRedemption(null);
       return { success: true };
     } catch (err) {
       return { success: false, error: 'Network error.' };
@@ -197,7 +232,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const applyRedemption = (redemption: any) => {
     setAppliedRedemption(redemption);
-    setAppliedCoupon(null); // Clear coupon if reward is applied
+    setAppliedCoupon(null);
   };
 
   const removeRedemption = () => {
@@ -208,6 +243,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     <CartContext.Provider
       value={{
         cart,
+        restaurantId,
+        setRestaurantId,
         addToCart,
         removeFromCart,
         updateQuantity,

@@ -65,10 +65,16 @@ export default function OrderHistoryPage() {
     
     order.orderItems.forEach((item: any) => {
       if (item.menuItem) {
-        addToCart(item.menuItem, item.quantity, {
-          variation: item.variation || undefined,
-          spiceLevel: item.spiceLevel || undefined,
-          addons: item.orderItemAddons?.map((a: any) => a.addon).filter(Boolean) || [],
+        addToCart({
+          itemId: item.menuItem.id,
+          name: item.menuItem.name,
+          imageUrl: item.menuItem.imageUrl || null,
+          basePrice: Number(item.unitPrice || item.menuItem.basePrice || 0),
+          quantity: item.quantity,
+          variation: item.variation ? { id: item.variation.id, name: item.variation.name, priceDifference: Number(item.variation.priceDifference || 0) } : null,
+          spiceLevel: item.spiceLevel ? { id: item.spiceLevel.id, name: item.spiceLevel.name, priceDifference: Number(item.spiceLevel.priceDifference || 0) } : null,
+          addons: item.orderItemAddons?.map((a: any) => ({ id: a.addon.id, name: a.addon.name, price: Number(a.addon.price || 0) })).filter(Boolean) || [],
+          notes: item.notes || '',
         });
       }
     });
@@ -372,7 +378,7 @@ export default function OrderHistoryPage() {
                 {selectedOrder.orderItems?.map((item: any) => (
                   <div key={item.id} style={{
                     display: 'flex',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                     alignItems: 'start',
                     backgroundColor: 'rgba(255, 255, 255, 0.02)',
                     padding: '12px 14px',

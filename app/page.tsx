@@ -7,202 +7,211 @@ import FireParticles from './components/FireParticles';
 import ProductCustomizerModal from './components/ProductCustomizerModal';
 import { useCart } from './components/CartContext';
 
-type PriceValue = number | string;
+interface Restaurant {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  logoUrl: string | null;
+  website: string | null;
+  locations?: Array<{
+    city: string;
+    addressLine1: string;
+  }>;
+  _count?: {
+    menuItems: number;
+  };
+}
 
 interface MenuItem {
   id: string;
   name: string;
   description: string | null;
   imageUrl: string | null;
-  basePrice: PriceValue;
+  basePrice: number;
   isAvailable?: boolean;
-  category: { name: string };
-  variations: Array<{ id: string; name: string; priceDifference: PriceValue }>;
-  itemSpiceLevels: Array<{
-    spiceLevel: { id: string; name: string; value: number; priceDifference: PriceValue };
+  category?: { name: string };
+  restaurant?: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl: string | null;
+  };
+  variations?: Array<{ id: string; name: string; priceDifference: number }>;
+  itemSpiceLevels?: Array<{
+    spiceLevel: { id: string; name: string; value: number; priceDifference: number };
   }>;
-  itemAddons: Array<{
-    addon: { id: string; name: string; price: PriceValue; isAvailable?: boolean };
+  itemAddons?: Array<{
+    addon: { id: string; name: string; price: number; isAvailable?: boolean };
   }>;
 }
 
-const plainOptions = { variations: [], itemSpiceLevels: [], itemAddons: [] };
-
-const FALLBACK_MENU: MenuItem[] = [
+const FALLBACK_RESTAURANTS: Restaurant[] = [
   {
-    id: 'd3b07384-d113-4e4e-862d-0b32525164b0',
-    name: 'Richi Classic',
-    description: 'Flame-grilled Angus beef, cheddar, crisp lettuce, tomato and our signature sauce.',
-    imageUrl: '/burger_hero.png',
-    basePrice: 12.5,
-    category: { name: 'Burgers' },
-    variations: [
-      { id: 'd3b07384-d113-4e4e-862d-0b32525164d5', name: 'Single Patty', priceDifference: 0 },
-      { id: 'd3b07384-d113-4e4e-862d-0b32525164d6', name: 'Double Patty', priceDifference: 4 },
-    ],
-    itemSpiceLevels: [],
-    itemAddons: [],
+    id: 'd3b07384-d113-4e4e-862d-0b32525164d1',
+    slug: 'oh-richi',
+    name: 'Oh Richi',
+    description: 'Authentic Italian & Specialty Gourmet Burgers and Pizzas',
+    logoUrl: '/burger_hero.png',
+    website: 'https://ohrichi.com',
+    locations: [{ city: 'Rome', addressLine1: '123 Via Roma' }],
+    _count: { menuItems: 24 },
   },
   {
-    id: 'd3b07384-d113-4e4e-862d-0b32525164b4',
-    name: 'BBQ Bacon',
-    description: 'Smoky beef, crispy bacon, caramelized onions and house barbecue glaze.',
-    imageUrl: '/burger_hero.png',
-    basePrice: 14,
-    category: { name: 'Burgers' },
-    ...plainOptions,
+    id: 'rest-bella-italia',
+    slug: 'bella-italia',
+    name: 'Bella Italia Trattoria',
+    description: 'Traditional Wood-fired Neapolitan Pizzas & Handmade Pasta',
+    logoUrl: '/burger_hero.png',
+    website: 'https://bellaitalia.com',
+    locations: [{ city: 'Naples', addressLine1: '45 Piazza Navona' }],
+    _count: { menuItems: 18 },
   },
   {
-    id: 'fallback-spicy-burger',
-    name: 'Spicy Jalapeño',
-    description: 'Juicy beef, pepper jack, jalapeños and a bright chilli-lime sauce.',
-    imageUrl: '/burger_hero.png',
-    basePrice: 13.5,
-    category: { name: 'Burgers' },
-    ...plainOptions,
+    id: 'rest-tokyo-sushi',
+    slug: 'tokyo-sushi',
+    name: 'Tokyo Sushi & Ramen Express',
+    description: 'Fresh Sashimi, Specialty Rolls, and Authentic Tonkotsu Ramen',
+    logoUrl: '/burger_hero.png',
+    website: 'https://tokyosushi.com',
+    locations: [{ city: 'Milan', addressLine1: '88 Corso Como' }],
+    _count: { menuItems: 22 },
   },
   {
-    id: 'fallback-mushroom-burger',
-    name: 'Mushroom Melt',
-    description: 'Angus beef, roasted mushrooms, melted Swiss and black garlic mayo.',
-    imageUrl: '/burger_hero.png',
-    basePrice: 13.25,
-    category: { name: 'Burgers' },
-    ...plainOptions,
-  },
-  {
-    id: 'd3b07384-d113-4e4e-862d-0b32525164b1',
-    name: 'Margherita Pizza',
-    description: 'San Marzano tomato, fresh mozzarella, basil and extra virgin olive oil.',
-    imageUrl: '/burger_hero.png',
-    basePrice: 10,
-    category: { name: 'Pizzas' },
-    ...plainOptions,
-  },
-  {
-    id: 'fallback-loaded-fries',
-    name: 'Richi Loaded Fries',
-    description: 'Crispy skin-on fries, cheese sauce, smoky onions and fresh herbs.',
-    imageUrl: '/burger_hero.png',
-    basePrice: 6.5,
-    category: { name: 'Sides' },
-    ...plainOptions,
-  },
-  {
-    id: 'd3b07384-d113-4e4e-862d-0b32525164b2',
-    name: 'Coca Cola',
-    description: 'Ice-cold classic Coca Cola.',
-    imageUrl: null,
-    basePrice: 2.5,
-    category: { name: 'Drinks' },
-    ...plainOptions,
-  },
-  {
-    id: 'd3b07384-d113-4e4e-862d-0b32525164b3',
-    name: 'Still Water',
-    description: 'Chilled premium mineral water.',
-    imageUrl: null,
-    basePrice: 2,
-    category: { name: 'Drinks' },
-    ...plainOptions,
+    id: 'rest-smash-burger',
+    slug: 'smash-burger-express',
+    name: 'Smash Burger Express',
+    description: 'Double Crusted Smashed Beef Burgers & Loaded Truffle Fries',
+    logoUrl: '/burger_hero.png',
+    website: 'https://smashburgerexpress.com',
+    locations: [{ city: 'Florence', addressLine1: '12 Via Dante' }],
+    _count: { menuItems: 15 },
   },
 ];
 
-const CATEGORY_ICONS: Record<string, string> = {
-  All: '✦', Burgers: '🍔', Pizzas: '🍕', Chicken: '🍗', Sides: '🍟',
-  Drinks: '🥤', Desserts: '🍨', Combos: '🎁',
-};
+const FALLBACK_PRODUCTS: MenuItem[] = [
+  {
+    id: 'prod-oh-g',
+    name: "Oh'G Signature Burger",
+    description: 'Prime smashed beef, double cheddar, crispy bacon, Oh-G sauce',
+    imageUrl: '/burger_hero.png',
+    basePrice: 8.50,
+    category: { name: 'Burgers' },
+    restaurant: { id: 'd3b07384-d113-4e4e-862d-0b32525164d1', name: 'Oh Richi', slug: 'oh-richi', logoUrl: '/burger_hero.png' },
+  },
+  {
+    id: 'prod-classic-cheeeese',
+    name: 'Classic Cheeeese Burger',
+    description: 'Prime beef, melted American cheese, pickles, mustard, mayo',
+    imageUrl: '/burger_hero.png',
+    basePrice: 7.50,
+    category: { name: 'Burgers' },
+    restaurant: { id: 'd3b07384-d113-4e4e-862d-0b32525164d1', name: 'Oh Richi', slug: 'oh-richi', logoUrl: '/burger_hero.png' },
+  },
+  {
+    id: 'prod-bella-margherita',
+    name: 'Wood-fired Pizza Margherita',
+    description: 'San Marzano tomato sauce, fresh mozzarella di bufala, basil',
+    imageUrl: '/burger_hero.png',
+    basePrice: 11.00,
+    category: { name: 'Pizza' },
+    restaurant: { id: 'rest-bella-italia', name: 'Bella Italia Trattoria', slug: 'bella-italia', logoUrl: '/burger_hero.png' },
+  },
+  {
+    id: 'prod-dragon-roll',
+    name: 'Dragon Spicy Roll (8pcs)',
+    description: 'Tempura shrimp, avocado, spicy tuna, unagi glaze',
+    imageUrl: '/burger_hero.png',
+    basePrice: 14.50,
+    category: { name: 'Ramen' },
+    restaurant: { id: 'rest-tokyo-sushi', name: 'Tokyo Sushi & Ramen Express', slug: 'tokyo-sushi', logoUrl: '/burger_hero.png' },
+  },
+];
 
-const money = (value: PriceValue) => `€${Number(value).toFixed(2)}`;
-
-function ArrowIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
-}
+const MARKETPLACE_CATEGORIES = [
+  { id: 'Food', name: 'Food', icon: '🍔', badge: 'Popular' },
+  { id: 'Grocery', name: 'Grocery', icon: '🛒', badge: 'Essential' },
+  { id: 'Pharmacy', name: 'Pharmacy', icon: '💊', badge: '24/7' },
+  { id: 'Fashion', name: 'Fashion', icon: '👕', badge: 'Style' },
+  { id: 'Electronics', name: 'Electronics', icon: '🎧', badge: 'Tech' },
+  { id: 'Beauty', name: 'Beauty', icon: '💄', badge: 'Glow' },
+  { id: 'Gifts', name: 'Gifts', icon: '🎁', badge: 'Special' },
+  { id: 'More', name: 'More', icon: '🎛️', badge: 'Explore' },
+];
 
 function SearchIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>;
 }
 
-function ProductCard({ item, index, compact, onOpen, onAdd }: {
-  item: MenuItem;
-  index: number;
-  compact?: boolean;
-  onOpen: (item: MenuItem) => void;
-  onAdd: (item: MenuItem) => void;
-}) {
-  const category = item.category?.name || 'Menu';
-  const isDrink = category.toLowerCase().includes('drink') && !item.imageUrl;
-
+function FilterIcon() {
   return (
-    <article className={`richi-product-card ${compact ? 'is-compact' : ''}`}>
-      <button className="richi-product-visual" type="button" onClick={() => onOpen(item)} aria-label={`Customize ${item.name}`}>
-        <span className="richi-product-badge">{index === 0 ? 'Popular' : category}</span>
-        {isDrink ? <span className="richi-product-emoji" aria-hidden="true">🥤</span> : (
-          <img
-            src={item.imageUrl || '/burger_hero.png'}
-            alt=""
-            loading={index < 4 ? 'eager' : 'lazy'}
-            onError={(event) => { event.currentTarget.src = '/burger_hero.png'; }}
-          />
-        )}
-      </button>
-      <div className="richi-product-copy">
-        <div className="richi-product-heading">
-          <h3>{item.name}</h3>
-          <span className="richi-rating"><b>★</b> {(4.6 + (index % 3) * 0.1).toFixed(1)}</span>
-        </div>
-        {!compact && <p>{item.description || 'Freshly prepared with premium ingredients.'}</p>}
-        <div className="richi-product-footer">
-          <strong>{money(item.basePrice)}</strong>
-          <button type="button" onClick={() => onAdd(item)}>Add <span>+</span></button>
-        </div>
-      </div>
-    </article>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
+    </svg>
   );
 }
 
-export default function CustomerHomePage() {
-  const { addToCart } = useCart();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+export default function Door2DoorMarketplaceHomePage() {
+  const { cart, addToCart } = useCart();
+  const itemsCount = useMemo(() => cart.reduce((total, i) => total + i.quantity, 0), [cart]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [products, setProducts] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [usingFallback, setUsingFallback] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Burgers');
+  const [selectedCategory, setSelectedCategory] = useState('Food');
+  const [activeTab, setActiveTab] = useState<'restaurants' | 'products'>('restaurants');
+
   const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
-  const [selectedVariation, setSelectedVariation] = useState<MenuItem['variations'][number] | null>(null);
-  const [selectedSpice, setSelectedSpice] = useState<MenuItem['itemSpiceLevels'][number]['spiceLevel'] | null>(null);
-  const [selectedAddons, setSelectedAddons] = useState<MenuItem['itemAddons'][number]['addon'][]>([]);
-  const [quantity, setQuantity] = useState(1);
-  const [itemNotes, setItemNotes] = useState('');
   const [toast, setToast] = useState('');
 
   useEffect(() => {
-    const controller = new AbortController();
     let mounted = true;
-    const timeout = window.setTimeout(() => controller.abort(), 3000);
-    async function loadMenu() {
+    async function loadMarketplaceData() {
       try {
-        const response = await fetch('/api/menu', { signal: controller.signal });
-        if (!response.ok) throw new Error('Menu unavailable');
-        const data = await response.json();
-        if (!Array.isArray(data) || data.length === 0) throw new Error('Menu empty');
-        if (mounted) setMenuItems(data);
+        setLoading(true);
+        if (searchQuery.trim().length > 0) {
+          const searchRes = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.trim())}`);
+          if (searchRes.ok) {
+            const data = await searchRes.json();
+            if (mounted) {
+              setRestaurants(data.restaurants || []);
+              setProducts(data.products || []);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
+        const res = await fetch('/api/restaurants');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        if (mounted && Array.isArray(data) && data.length > 0) {
+          setRestaurants(data);
+          setProducts(FALLBACK_PRODUCTS);
+        } else if (mounted) {
+          setRestaurants(FALLBACK_RESTAURANTS);
+          setProducts(FALLBACK_PRODUCTS);
+        }
       } catch {
-        if (!mounted) return;
-        setMenuItems(FALLBACK_MENU);
-        setUsingFallback(true);
+        if (mounted) {
+          setRestaurants(FALLBACK_RESTAURANTS);
+          setProducts(FALLBACK_PRODUCTS);
+        }
       } finally {
-        window.clearTimeout(timeout);
         if (mounted) setLoading(false);
       }
     }
-    loadMenu();
+
+    const timer = setTimeout(() => {
+      loadMarketplaceData();
+    }, 250);
+
     return () => {
       mounted = false;
-      window.clearTimeout(timeout);
-      controller.abort();
+      clearTimeout(timer);
     };
-  }, []);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (!toast) return;
@@ -210,399 +219,674 @@ export default function CustomerHomePage() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  useEffect(() => {
-    if (!customizingItem) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const closeOnEscape = (event: KeyboardEvent) => event.key === 'Escape' && setCustomizingItem(null);
-    window.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [customizingItem]);
-
-  const categories = useMemo(
-    () => ['All', ...Array.from(new Set(menuItems.map((item) => item.category?.name || 'Other')))],
-    [menuItems],
-  );
-  const homeCategories = useMemo(() => {
-    const preferredOrder = ['Burgers', 'Sides', 'Drinks', 'Desserts', 'Pizzas', 'Chicken'];
-    const available = categories
-      .filter((category) => category !== 'All')
-      .sort((left, right) => {
-        const leftIndex = preferredOrder.indexOf(left);
-        const rightIndex = preferredOrder.indexOf(right);
-        return (leftIndex < 0 ? 99 : leftIndex) - (rightIndex < 0 ? 99 : rightIndex);
-      });
-    return [...available, 'All'];
-  }, [categories]);
-
-  const filteredItems = useMemo(() => {
+  const filteredRestaurants = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    return menuItems.filter((item) => {
-      const inCategory = selectedCategory === 'All' || item.category?.name === selectedCategory;
-      const inSearch = !query || item.name.toLowerCase().includes(query) || item.description?.toLowerCase().includes(query);
-      return inCategory && inSearch && item.isAvailable !== false;
+    return restaurants.filter((r) => {
+      const matchesSearch = !query
+        || r.name.toLowerCase().includes(query)
+        || r.description?.toLowerCase().includes(query)
+        || r.locations?.some((l) => l.city.toLowerCase().includes(query));
+      return matchesSearch;
     });
-  }, [menuItems, searchQuery, selectedCategory]);
+  }, [restaurants, searchQuery]);
 
-  const availableItems = menuItems.filter((item) => item.isAvailable !== false);
-  const featuredItems = [
-    ...availableItems.filter((item) => item.category?.name.toLowerCase().includes('burger')),
-    ...availableItems.filter((item) => !item.category?.name.toLowerCase().includes('burger')),
-  ].slice(0, 4);
-  const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
-
-  const openCustomizer = (item: MenuItem) => {
-    setCustomizingItem(item);
-  };
-
-  const quickAdd = (item: MenuItem) => {
-    openCustomizer(item);
-  };
-
-  const toggleAddon = (addon: MenuItem['itemAddons'][number]['addon']) => {
-    setSelectedAddons((current) => current.some((item) => item.id === addon.id)
-      ? current.filter((item) => item.id !== addon.id)
-      : [...current, addon]);
-  };
-
-  const addCustomizedItem = () => {
-    if (!customizingItem) return;
-    addToCart({
-      itemId: customizingItem.id,
-      name: customizingItem.name,
-      imageUrl: customizingItem.imageUrl,
-      basePrice: Number(customizingItem.basePrice),
-      quantity,
-      variation: selectedVariation ? {
-        id: selectedVariation.id, name: selectedVariation.name,
-        priceDifference: Number(selectedVariation.priceDifference || 0),
-      } : null,
-      spiceLevel: selectedSpice ? {
-        id: selectedSpice.id, name: selectedSpice.name,
-        priceDifference: Number(selectedSpice.priceDifference || 0),
-      } : null,
-      addons: selectedAddons.map((addon) => ({ id: addon.id, name: addon.name, price: Number(addon.price) })),
-      notes: itemNotes,
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return products.filter((p) => {
+      const matchesSearch = !query
+        || p.name.toLowerCase().includes(query)
+        || p.description?.toLowerCase().includes(query)
+        || p.category?.name.toLowerCase().includes(query)
+        || p.restaurant?.name.toLowerCase().includes(query);
+      return matchesSearch;
     });
-    setToast(`${customizingItem.name} added to your cart`);
-    setCustomizingItem(null);
-  };
+  }, [products, searchQuery]);
 
-  const modalPrice = useMemo(() => {
-    if (!customizingItem) return 0;
-    const extras = Number(selectedVariation?.priceDifference || 0)
-      + Number(selectedSpice?.priceDifference || 0)
-      + selectedAddons.reduce((total, addon) => total + Number(addon.price || 0), 0);
-    return (Number(customizingItem.basePrice) + extras) * quantity;
-  }, [customizingItem, quantity, selectedAddons, selectedSpice, selectedVariation]);
   return (
     <CustomerLayout>
-      <div className="richi-storefront">
-        <div className="richi-home-grid">
-          <aside className="richi-promo-rail" aria-label="Current offers">
-            <section className="richi-promo-card richi-family-card">
-              <span className="richi-micro-label">🔥 Today&apos;s deal</span>
-              <h2>Family Feast</h2>
-              <p>2 Burgers + 2 Fries<br />+ 2 Drinks</p>
-              <div className="richi-promo-price"><strong>€24.90</strong><del>€31.50</del></div>
-              <button type="button" onClick={scrollToMenu}>Order now</button>
-              <img src="/burger_hero.png" alt="Family burger feast" />
-            </section>
-
-            <section className="richi-promo-card richi-loyalty-card">
-              <span className="richi-micro-label">Loyalty rewards</span>
-              <p>You have</p>
-              <strong className="richi-points">1,250</strong>
-              <span>Points</span>
-              <div className="richi-points-track"><span /></div>
-              <small>Next reward at 1,500 points</small>
-              <Link href="/rewards">View rewards</Link>
-            </section>
-          </aside>
-
-          <div className="richi-home-main">
-            <section className="richi-hero" aria-labelledby="richi-hero-title" style={{ position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }}>
-                <FireParticles />
-              </div>
-              <div className="richi-hero-glow" aria-hidden="true" />
-              <div className="richi-spark richi-spark-one" aria-hidden="true">✦</div>
-              <div className="richi-spark richi-spark-two" aria-hidden="true">•</div>
-              <div className="richi-hero-copy" style={{ position: 'relative', zIndex: 2 }}>
-                <span className="richi-fresh-pill">100% Halal &nbsp;•&nbsp; Freshly Made Daily</span>
-                <h1 id="richi-hero-title" style={{ fontSize: '3rem', lineHeight: '1.05', textTransform: 'uppercase' }}>
-                  BURGERS THAT<br /><em style={{ color: 'var(--accent-gold, #d6a84f)' }}>HIT DIFFERENT</em>
-                </h1>
-                <div className="richi-review-row">
-                  <span aria-label="5 out of 5 stars">★★★★★</span>
-                  <small>4.9 (3.2K+ reviews)</small>
-                </div>
-                <p>Premium ingredients, bold recipes and cheese that melts into every layer.</p>
-                <div className="richi-hero-actions">
-                  <Link href="/menu" className="richi-primary-action" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                    ORDER NOW <ArrowIcon />
-                  </Link>
-                  <Link href="/menu" className="richi-secondary-action" style={{ textDecoration: 'none' }}>
-                    EXPLORE MENU
-                  </Link>
-                </div>
-              </div>
-              <div className="richi-hero-art" aria-hidden="true" style={{ position: 'relative', zIndex: 2 }}>
-                <img src="/burger_hero.png" alt="OH Richi Signature Burger" />
-                <div className="richi-beef-seal"><b>100%</b><span>HALAL</span><strong>Beef</strong></div>
-                <span className="richi-chilli">🌶️</span>
-              </div>
-            </section>
-
-            {/* TRUST & QUALITY SECTION (4 FEATURE BLOCKS) */}
-            <section style={{
+      <div className="d2d-home-container" style={{ paddingBottom: '90px' }}>
+        
+        {/* HERO SECTION WITH DOOR2DOOR BRANDING & BANNER */}
+        <section
+          style={{
+            position: 'relative',
+            borderRadius: '28px',
+            background: 'linear-gradient(135deg, #ffffff 0%, #fff6ef 50%, #ffedd5 100%)',
+            padding: '36px 32px',
+            marginBottom: '32px',
+            boxShadow: '0 16px 40px rgba(249, 87, 0, 0.08)',
+            border: '1px solid #ffd8be',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '16px',
-              margin: '24px 0',
-            }}>
-              {[
-                { icon: '📜', title: '100% HALAL', desc: 'Certified Ingredients' },
-                { icon: '🔥', title: 'FRESHLY MADE', desc: 'Every Single Order' },
-                { icon: '⭐', title: 'PREMIUM QUALITY', desc: 'Best Ingredients' },
-                { icon: '🍔', title: 'BOLD FLAVOURS', desc: 'Made to Perfection' },
-              ].map((block) => (
-                <div 
-                  key={block.title}
-                  style={{
-                    backgroundColor: '#13131a',
-                    border: '1px solid #232333',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                  }}
-                >
-                  <span style={{ fontSize: '1.8rem' }}>{block.icon}</span>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#ffffff', letterSpacing: '0.5px' }}>
-                      {block.title}
-                    </h4>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
-                      {block.desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </section>
-
-            {/* HAPPY HOUR PROMOTION BANNER */}
-            <section style={{
-              backgroundColor: '#121218',
-              border: '1px solid #282838',
-              borderRadius: '24px',
-              padding: '28px',
-              margin: '24px 0',
-              display: 'flex',
-              flexWrap: 'wrap',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '32px',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '20px',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5)',
-            }}>
-              <div style={{ flex: '1 1 300px' }}>
-                <span style={{
-                  display: 'inline-block',
-                  color: '#ff9500',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase',
-                  marginBottom: '8px',
-                }}>
-                  🔥 Limited Time Deal
-                </span>
-                <h2 style={{ margin: '0 0 6px 0', fontSize: '1.8rem', fontWeight: 900, color: '#ffffff', textTransform: 'uppercase' }}>
-                  HAPPY HOUR SPECIAL
-                </h2>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.5rem', fontWeight: 900, color: '#ff9500' }}>
-                  20% OFF ALL BURGERS
-                </h3>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
-                  Monday – Thursday • 3 PM – 6 PM
-                </p>
-                <div style={{ marginTop: '16px' }}>
-                  <Link
-                    href="/menu"
-                    style={{
-                      textDecoration: 'none',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '12px 24px',
-                      fontSize: '0.88rem',
-                      fontWeight: 800,
-                      color: '#ffffff',
-                      background: 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)',
-                      borderRadius: '14px',
-                      boxShadow: '0 8px 24px rgba(255, 140, 0, 0.45)',
-                    }}
-                  >
-                    ORDER NOW
-                  </Link>
+            }}
+          >
+            {/* Left Content */}
+            <div style={{ zIndex: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
+                <img
+                  src="/door2door_logo.jpg"
+                  alt="Door2Door Logo"
+                  style={{
+                    width: '85px',
+                    height: '85px',
+                    borderRadius: '50%',
+                    boxShadow: '0 8px 20px rgba(249, 87, 0, 0.2)',
+                    objectFit: 'cover',
+                  }}
+                />
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: '#111827', letterSpacing: '-0.5px' }}>
+                    Door<span style={{ color: '#F95700' }}>2</span>Door
+                  </h2>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6b7280', letterSpacing: '0.3px' }}>
+                    Your Parcel • Our Priority
+                  </span>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <img 
-                  src="/burger_hero.png" 
-                  alt="Happy Hour Burger Deal" 
-                  style={{ width: '140px', height: 'auto', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }}
-                />
-              </div>
-            </section>
+              <h1
+                style={{
+                  fontSize: '2.8rem',
+                  lineHeight: '1.1',
+                  fontWeight: 900,
+                  color: '#0f172a',
+                  marginBottom: '16px',
+                  letterSpacing: '-1px',
+                }}
+              >
+                Everything You Need, <br />
+                <span style={{ color: '#F95700' }}>Delivered To You</span>
+              </h1>
 
-            <h2 className="richi-mobile-section-title">Categories</h2>
-            <nav className="richi-category-bar" aria-label="Menu categories">
-              {homeCategories.map((category) => (
+              {/* Badges */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '28px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, color: '#1e293b', backgroundColor: '#ffffff', padding: '6px 14px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <span style={{ color: '#F95700' }}>✓</span> Fast Delivery
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, color: '#1e293b', backgroundColor: '#ffffff', padding: '6px 14px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <span style={{ color: '#F95700' }}>✓</span> Safe &amp; Reliable
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 800, color: '#1e293b', backgroundColor: '#ffffff', padding: '6px 14px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <span style={{ color: '#F95700' }}>♥</span> Your Priority
+                </span>
+              </div>
+
+              {/* SEARCH INPUT */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '20px',
+                  padding: '6px 8px 6px 20px',
+                  boxShadow: '0 12px 32px rgba(249, 87, 0, 0.15)',
+                  border: '2px solid #F95700',
+                  maxWidth: '560px',
+                }}
+              >
+                <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', marginRight: '12px' }}>
+                  <SearchIcon />
+                </span>
+                <input
+                  type="search"
+                  placeholder="Search for stores, products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: '1.02rem',
+                    fontWeight: 600,
+                    color: '#0f172a',
+                    background: 'transparent',
+                    padding: '10px 0',
+                  }}
+                />
                 <button
                   type="button"
-                  key={category}
-                  className={selectedCategory === category ? 'active' : ''}
-                  onClick={() => {
-                    setSelectedCategory(category);
-                    document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  onClick={() => setActiveTab(activeTab === 'restaurants' ? 'products' : 'restaurants')}
+                  style={{
+                    backgroundColor: '#F95700',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '16px',
+                    width: '46px',
+                    height: '46px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(249, 87, 0, 0.3)',
+                    transition: 'transform 0.2s ease',
                   }}
+                  title="Filter options"
                 >
-                  <span>{CATEGORY_ICONS[category] || '🍽️'}</span>{category}
+                  <FilterIcon />
                 </button>
-              ))}
-            </nav>
-
-            <section className="richi-featured" aria-labelledby="featured-title">
-              <div className="richi-section-heading">
-                <div><span>🔥</span><h2 id="featured-title">Featured favorites</h2></div>
-                <button type="button" onClick={scrollToMenu}>View all <ArrowIcon /></button>
               </div>
-              <div className="richi-featured-layout">
-                <div className="richi-featured-grid">
-                  {(loading ? FALLBACK_MENU.slice(0, 4) : featuredItems).map((item, index) => (
-                    <ProductCard key={item.id} item={item} index={index} compact onOpen={openCustomizer} onAdd={quickAdd} />
-                  ))}
-                </div>
-                <aside className="richi-meal-deal">
-                  <div className="richi-meal-copy">
-                    <span>Meal of the day</span>
-                    <h3>Double Delight Combo</h3>
-                    <p>Double burger, golden fries and a cold drink.</p>
-                    <div><strong>€16.90</strong><del>€20.50</del></div>
-                    <button type="button" onClick={() => quickAdd(FALLBACK_MENU[1])}>Order now</button>
-                  </div>
-                  <img src="/burger_hero.png" alt="Double Delight burger combo" />
-                </aside>
-              </div>
-            </section>
-
-            <section className="richi-proof-strip" aria-label="Why customers choose Oh Richi">
-              <div className="richi-review-quote">
-                <span className="richi-avatar">S</span>
-                <div>
-                  <strong>What our customers say</strong>
-                  <p>“The best burgers in town—fresh ingredients and amazing taste every time.”</p>
-                  <small>— Sarah J.</small>
-                </div>
-              </div>
-              <div className="richi-benefit"><span>⚡</span><div><strong>Fast delivery</strong><small>30 min or less</small></div></div>
-              <div className="richi-benefit"><span>🥬</span><div><strong>Fresh ingredients</strong><small>Sourced daily</small></div></div>
-              <div className="richi-benefit"><span>✓</span><div><strong>Best quality</strong><small>100% guaranteed</small></div></div>
-            </section>
-          </div>
-        </div>
-
-        <section id="menu" className="richi-menu-section" aria-labelledby="menu-title">
-          <div className="richi-menu-header">
-            <div>
-              <span className="richi-kicker">Made fresh when you order</span>
-              <h2 id="menu-title">{selectedCategory === 'All' ? 'Menu' : selectedCategory}</h2>
-              <p>{selectedCategory === 'All' ? 'Find your new favorite.' : `Showing ${selectedCategory.toLowerCase()}.`}</p>
             </div>
-            <label className="richi-search-box">
-              <SearchIcon />
-              <span className="sr-only">Search menu</span>
-              <input
-                type="search"
-                placeholder="Search burgers, sides, drinks..."
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-              />
-              {searchQuery && <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear search">×</button>}
-            </label>
-          </div>
 
-          <div className="richi-menu-chips" role="group" aria-label="Filter menu">
-            {categories.map((category) => (
+            {/* Right Rider Banner Illustration */}
+            <div style={{ position: 'relative', textAlign: 'center', zIndex: 1 }}>
+              <img
+                src="/door2door_hero_rider.jpg"
+                alt="Door2Door Delivery Rider"
+                style={{
+                  width: '100%',
+                  maxHeight: '280px',
+                  objectFit: 'cover',
+                  borderRadius: '24px',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 8 CATEGORIES GRID */}
+        <section style={{ marginBottom: '36px' }}>
+          <div className="d2d-category-grid">
+            {MARKETPLACE_CATEGORIES.map((cat) => (
               <button
                 type="button"
-                key={category}
-                className={selectedCategory === category ? 'active' : ''}
-                onClick={() => setSelectedCategory(category)}
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                style={{
+                  backgroundColor: selectedCategory === cat.id ? '#fff3eb' : '#ffffff',
+                  border: selectedCategory === cat.id ? '2px solid #F95700' : '1px solid #f1f5f9',
+                  borderRadius: '22px',
+                  padding: '18px 12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.03)',
+                  transition: 'all 0.2s ease',
+                }}
               >
-                <span>{CATEGORY_ICONS[category] || '🍽️'}</span>{category}
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    backgroundColor: selectedCategory === cat.id ? '#F95700' : '#fff7ed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.75rem',
+                    boxShadow: '0 4px 12px rgba(249, 87, 0, 0.1)',
+                  }}
+                >
+                  {cat.icon}
+                </div>
+                <span
+                  style={{
+                    fontSize: '0.92rem',
+                    fontWeight: 800,
+                    color: selectedCategory === cat.id ? '#F95700' : '#1e293b',
+                  }}
+                >
+                  {cat.name}
+                </span>
               </button>
             ))}
           </div>
-
-          {usingFallback && <p className="richi-menu-notice">Preview menu shown while the live catalog reconnects.</p>}
-
-          {loading ? (
-            <div className="richi-menu-grid" aria-label="Loading menu">
-              {Array.from({ length: 8 }).map((_, index) => <div className="richi-product-skeleton" key={index} />)}
-            </div>
-          ) : filteredItems.length > 0 ? (
-            <div className="richi-menu-grid">
-              {filteredItems.map((item, index) => (
-                <ProductCard key={item.id} item={item} index={index} onOpen={openCustomizer} onAdd={quickAdd} />
-              ))}
-            </div>
-          ) : (
-            <div className="richi-empty-menu">
-              <span>🍽️</span>
-              <h3>No dishes found</h3>
-              <p>Try another search or clear your filters.</p>
-              <button type="button" onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}>Show everything</button>
-            </div>
-          )}
         </section>
-      </div>
-      {toast && <div className="richi-toast" role="status"><span>✓</span>{toast}</div>}
 
-      <ProductCustomizerModal
-        item={customizingItem}
-        onClose={() => setCustomizingItem(null)}
-        onAddToCart={({ item: customizedItem, quantity, variation, spiceLevel, addons, notes }) => {
-          addToCart({
-            itemId: customizedItem.id,
-            name: customizedItem.name,
-            imageUrl: customizedItem.imageUrl || null,
-            basePrice: Number(customizedItem.basePrice),
-            quantity,
-            variation: variation ? {
-              id: variation.id,
-              name: variation.name,
-              priceDifference: Number(variation.priceDifference || 0),
-            } : null,
-            spiceLevel: spiceLevel ? {
-              id: spiceLevel.id,
-              name: spiceLevel.name,
-              priceDifference: Number(spiceLevel.priceDifference || 0),
-            } : null,
-            addons: addons.map((a) => ({ id: a.id, name: a.name, price: Number(a.price) })),
-            notes,
-          });
-          setToast(`${customizedItem.name} added to your cart!`);
-          setCustomizingItem(null);
-        }}
-      />
+        {/* SPECIAL OFFERS PROMO BANNER */}
+        <section style={{ marginBottom: '40px' }}>
+          <div
+            style={{
+              position: 'relative',
+              borderRadius: '28px',
+              background: 'linear-gradient(135deg, #1c0a00 0%, #3a1500 50%, #992900 100%)',
+              padding: '32px 36px',
+              color: '#ffffff',
+              overflow: 'hidden',
+              boxShadow: '0 20px 45px rgba(249, 87, 0, 0.25)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '24px',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ zIndex: 2 }}>
+              <span
+                style={{
+                  textTransform: 'uppercase',
+                  fontSize: '0.78rem',
+                  fontWeight: 900,
+                  letterSpacing: '1.5px',
+                  color: '#ffd0b5',
+                }}
+              >
+                SPECIAL OFFERS
+              </span>
+              <h2 style={{ fontSize: '2.6rem', fontWeight: 900, margin: '8px 0 10px 0', lineHeight: '1.1' }}>
+                Up to <span style={{ color: '#ff8442' }}>50% Off</span>
+              </h2>
+              <p style={{ color: '#ffedd5', fontSize: '1.02rem', margin: '0 0 24px 0', fontWeight: 500 }}>
+                Your Favorite Items, Delivered Faster!
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('products')}
+                style={{
+                  backgroundColor: '#ffffff',
+                  color: '#F95700',
+                  border: 'none',
+                  borderRadius: '30px',
+                  padding: '12px 28px',
+                  fontWeight: 900,
+                  fontSize: '0.98rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
+                  transition: 'transform 0.2s ease',
+                }}
+              >
+                Shop Now ›
+              </button>
+            </div>
+
+            <div style={{ position: 'relative', textAlign: 'center', zIndex: 1 }}>
+              <img
+                src="/door2door_promo_box.jpg"
+                alt="Door2Door Special Offers Gift Box"
+                style={{
+                  width: '100%',
+                  maxHeight: '220px',
+                  objectFit: 'cover',
+                  borderRadius: '20px',
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* TAB NAVIGATION & DIRECTORY VIEW (STORES VS MEALS) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+            {activeTab === 'restaurants' ? 'Featured Stores & Restaurants' : 'Popular Dishes & Items'}
+          </h2>
+
+          <div style={{ display: 'flex', gap: '8px', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '16px' }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('restaurants')}
+              style={{
+                padding: '10px 22px',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                backgroundColor: activeTab === 'restaurants' ? '#F95700' : 'transparent',
+                color: activeTab === 'restaurants' ? '#ffffff' : '#64748b',
+                boxShadow: activeTab === 'restaurants' ? '0 4px 12px rgba(249, 87, 0, 0.25)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🏪 Stores ({filteredRestaurants.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('products')}
+              style={{
+                padding: '10px 22px',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                backgroundColor: activeTab === 'products' ? '#F95700' : 'transparent',
+                color: activeTab === 'products' ? '#ffffff' : '#64748b',
+                boxShadow: activeTab === 'products' ? '0 4px 12px rgba(249, 87, 0, 0.25)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🍔 Dishes &amp; Products ({filteredProducts.length})
+            </button>
+          </div>
+        </div>
+
+        {/* RESTAURANTS VIEW */}
+        {activeTab === 'restaurants' && (
+          <section>
+            {loading ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} style={{ height: '260px', backgroundColor: '#f1f5f9', borderRadius: '24px', animation: 'pulse 1.5s infinite' }} />
+                ))}
+              </div>
+            ) : filteredRestaurants.length > 0 ? (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: '24px',
+                }}
+              >
+                {filteredRestaurants.map((r, index) => (
+                  <Link
+                    href={`/restaurants/${r.slug}`}
+                    key={r.id}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <article
+                      style={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '24px',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+                        height: '100%',
+                      }}
+                    >
+                      <div style={{ position: 'relative', height: '160px', backgroundColor: '#fff7ed', overflow: 'hidden' }}>
+                        <img
+                          src={r.logoUrl || '/burger_hero.png'}
+                          alt={r.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => { (e.target as HTMLImageElement).src = '/burger_hero.png'; }}
+                        />
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '12px',
+                            left: '12px',
+                            backgroundColor: '#ffffff',
+                            color: '#F95700',
+                            fontSize: '0.8rem',
+                            fontWeight: 900,
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          ★ {(4.8 - (index % 3) * 0.1).toFixed(1)}
+                        </span>
+                      </div>
+
+                      <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
+                            {r.name}
+                          </h3>
+                          <p style={{ margin: '0 0 14px 0', fontSize: '0.88rem', color: '#64748b', lineHeight: '1.4' }}>
+                            {r.description || 'Popular store serving fast deliveries.'}
+                          </p>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b' }}>
+                            📍 {r.locations?.[0]?.city || 'Main Branch'}
+                          </span>
+                          <span style={{ fontSize: '0.88rem', fontWeight: 900, color: '#F95700' }}>
+                            Visit Store ›
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 20px', backgroundColor: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+                <p style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>No stores found</p>
+                <button type="button" onClick={() => setSearchQuery('')} style={{ color: '#F95700', background: 'none', border: 'none', fontWeight: 800, cursor: 'pointer' }}>Show all stores</button>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* PRODUCTS / DISHES TAB VIEW */}
+        {activeTab === 'products' && (
+          <section>
+            {filteredProducts.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
+                {filteredProducts.map((p) => (
+                  <article
+                    key={p.id}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '24px',
+                      padding: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+                    }}
+                  >
+                    <div>
+                      <img
+                        src={p.imageUrl || '/burger_hero.png'}
+                        alt={p.name}
+                        style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '16px', marginBottom: '12px' }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/burger_hero.png'; }}
+                      />
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#F95700', backgroundColor: '#fff7ed', padding: '4px 10px', borderRadius: '12px' }}>
+                        {p.restaurant?.name || 'Partner Store'}
+                      </span>
+                      <h4 style={{ margin: '8px 0 4px 0', fontSize: '1.08rem', fontWeight: 900, color: '#0f172a' }}>{p.name}</h4>
+                      <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 12px 0', lineHeight: '1.4' }}>{p.description}</p>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
+                      <strong style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>€{Number(p.basePrice).toFixed(2)}</strong>
+                      <button
+                        type="button"
+                        onClick={() => setCustomizingItem(p)}
+                        style={{
+                          backgroundColor: '#F95700',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '14px',
+                          padding: '8px 16px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 10px rgba(249, 87, 0, 0.2)',
+                        }}
+                      >
+                        Add +
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 20px', backgroundColor: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
+                <p style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>No products found</p>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* BOTTOM NAVIGATION BAR (FIXED FOR MOBILE / DESKTOP DISCOVERY) */}
+        <nav
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: '#ffffff',
+            borderTop: '1px solid #e2e8f0',
+            padding: '10px 24px',
+            display: 'flex',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            zIndex: 100,
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => { setActiveTab('restaurants'); setSelectedCategory('Food'); }}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              cursor: 'pointer',
+              color: '#F95700',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+            }}
+          >
+            <span style={{ fontSize: '1.3rem' }}>🏠</span>
+            <span>Home</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('restaurants')}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              cursor: 'pointer',
+              color: activeTab === 'restaurants' ? '#F95700' : '#64748b',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+            }}
+          >
+            <span style={{ fontSize: '1.3rem' }}>🏪</span>
+            <span>Stores</span>
+          </button>
+
+          <Link
+            href="/checkout"
+            style={{
+              textDecoration: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              color: '#64748b',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+              position: 'relative',
+            }}
+          >
+            <span style={{ fontSize: '1.3rem', position: 'relative' }}>
+              🛒
+              {itemsCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-10px',
+                    backgroundColor: '#F95700',
+                    color: '#ffffff',
+                    borderRadius: '50%',
+                    width: '18px',
+                    height: '18px',
+                    fontSize: '0.7rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                  }}
+                >
+                  {itemsCount}
+                </span>
+              )}
+            </span>
+            <span>Cart</span>
+          </Link>
+
+          <Link
+            href="/orders"
+            style={{
+              textDecoration: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              color: '#64748b',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+            }}
+          >
+            <span style={{ fontSize: '1.3rem' }}>📋</span>
+            <span>Orders</span>
+          </Link>
+
+          <Link
+            href="/dashboard"
+            style={{
+              textDecoration: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              color: '#64748b',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+            }}
+          >
+            <span style={{ fontSize: '1.3rem' }}>•••</span>
+            <span>More</span>
+          </Link>
+        </nav>
+
+        {toast && <div className="richi-toast" role="status"><span>✓</span>{toast}</div>}
+
+        <ProductCustomizerModal
+          item={customizingItem}
+          onClose={() => setCustomizingItem(null)}
+          onAddToCart={({ item: customizedItem, quantity, variation, spiceLevel, addons, notes }) => {
+            const itemWithRest = customizedItem as any;
+            addToCart({
+              restaurantId: itemWithRest.restaurant?.id || itemWithRest.restaurantId,
+              itemId: customizedItem.id,
+              name: customizedItem.name,
+              imageUrl: customizedItem.imageUrl || null,
+              basePrice: Number(customizedItem.basePrice),
+              quantity,
+              notes: notes || '',
+              variation: variation ? {
+                id: variation.id,
+                name: variation.name,
+                priceDifference: Number(variation.priceDifference || 0),
+              } : null,
+              spiceLevel: spiceLevel ? {
+                id: spiceLevel.id,
+                name: spiceLevel.name,
+                priceDifference: Number(spiceLevel.priceDifference || 0),
+              } : null,
+              addons: addons.map((a: any) => ({
+                id: a.id,
+                name: a.name,
+                price: Number(a.price),
+                quantity: a.quantity || 1,
+              })),
+            });
+            setToast(`Added ${customizedItem.name} to your cart!`);
+            setCustomizingItem(null);
+          }}
+        />
+
+      </div>
     </CustomerLayout>
   );
 }

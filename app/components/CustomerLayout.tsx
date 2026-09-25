@@ -170,6 +170,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           </Link>
 
           <nav className="richi-desktop-nav" aria-label="Main navigation" suppressHydrationWarning>
+            <Link href="/" className={mounted && (safePath === '/' || safePath.startsWith('/restaurants')) ? 'active' : ''}>RESTAURANTS</Link>
             <Link href="/menu" className={mounted && safePath.startsWith('/menu') ? 'active' : ''}>MENU</Link>
             <Link href="/orders" className={mounted && safePath.startsWith('/orders') ? 'active' : ''}>ORDER HISTORY</Link>
             <Link href="/promotions" className={mounted && safePath === '/promotions' ? 'active' : ''}>PROMOTIONS</Link>

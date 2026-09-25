@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const restaurantId = searchParams.get('restaurantId');
+
+    const whereClause: any = { isActive: true };
+    if (restaurantId) {
+      whereClause.restaurantId = restaurantId;
+    }
+
     const rewards = await db.reward.findMany({
-      where: { isActive: true },
+      where: whereClause,
       orderBy: { requiredPoints: 'asc' },
     });
 

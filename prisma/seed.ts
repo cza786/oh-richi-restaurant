@@ -160,9 +160,10 @@ async function main() {
   // 5. Seed Restaurant: "Oh Richi"
   const restaurant = await prisma.restaurant.upsert({
     where: { id: 'd3b07384-d113-4e4e-862d-0b32525164d1' },
-    update: {},
+    update: { slug: 'oh-richi' },
     create: {
       id: 'd3b07384-d113-4e4e-862d-0b32525164d1',
+      slug: 'oh-richi',
       name: 'Oh Richi',
       description: 'Authentic Italian & Specialty Gourmet Burgers and Pizzas',
       website: 'https://ohrichi.com',
@@ -300,9 +301,10 @@ async function main() {
   for (const cat of categoriesData) {
     categories[cat.name] = await prisma.menuCategory.upsert({
       where: { id: cat.id },
-      update: { name: cat.name, sortOrder: cat.sortOrder },
+      update: { name: cat.name, sortOrder: cat.sortOrder, restaurantId: restaurant.id },
       create: {
         id: cat.id,
+        restaurantId: restaurant.id,
         locationId: location.id,
         name: cat.name,
         sortOrder: cat.sortOrder,
@@ -364,9 +366,10 @@ async function main() {
   for (const b of beefBurgers) {
     const item = await prisma.menuItem.upsert({
       where: { id: b.id },
-      update: { name: b.name, description: b.description, basePrice: b.basePrice },
+      update: { name: b.name, description: b.description, basePrice: b.basePrice, restaurantId: restaurant.id },
       create: {
         id: b.id,
+        restaurantId: restaurant.id,
         categoryId: categories['Chunky Beef Burger'].id,
         name: b.name,
         description: `${b.tagline} — ${b.description}`,
@@ -405,6 +408,7 @@ async function main() {
     update: {},
     create: {
       id: 'prod-mighty-oh',
+      restaurantId: restaurant.id,
       categoryId: categories['Chunky Beef Burger'].id,
       name: 'Mighty OH',
       description: 'If Big gets Great, it becomes Mighty — Big Bun, 2x Double smash, 500gr. Prime Beef, 4 Fach American Cheese, Tomate, Gurke, Salat, Röstzwiebeln, Krautsalat, BBQ Sauce',
@@ -420,6 +424,7 @@ async function main() {
     update: {},
     create: {
       id: 'prod-buffall-oh',
+      restaurantId: restaurant.id,
       categoryId: categories['Chicken / Hänchen'].id,
       name: 'Buffall,Oh',
       description: 'Dont be a Chicken (Pikant 🌶️) — Big Bun, Grilled Chicken Filet Stripes, Coleslaw, American Cheese, Tomate, Buffalo BBQ Sauce, Jalapenos',
@@ -433,6 +438,7 @@ async function main() {
     update: {},
     create: {
       id: 'prod-chick-oh',
+      restaurantId: restaurant.id,
       categoryId: categories['Chicken / Hänchen'].id,
       name: 'Chick,Oh',
       description: 'Oldscool Kick — Big Bun, Grilled Chicken Filet Stripes, Beef Bacon, American Cheese, Tomate, Gurke, Salat, Röstzwiebeln, Chimmi Mayo',
@@ -448,6 +454,7 @@ async function main() {
     update: {},
     create: {
       id: 'prod-rainb-oh',
+      restaurantId: restaurant.id,
       categoryId: categories['Vegetarisch'].id,
       name: 'Rainb,Oh',
       description: 'Feel Innocent (🥬 Vegetarisch) — Reg Bun, Grilled Haloumi Cheese, Salat, Tomate, Gurke, Coleslaw, ChimminMayo',
@@ -461,6 +468,7 @@ async function main() {
     update: {},
     create: {
       id: 'prod-veggi-oh',
+      restaurantId: restaurant.id,
       categoryId: categories['Vegetarisch'].id,
       name: 'Veggi,Oh',
       description: 'Green Soul (🥬 Vegetarisch) — Big Bun, American Cheese, Beyond Meat Patty, Röstzwiebeln, Salat, Tomate, Gurke, Oh,G Sauce',
@@ -476,6 +484,7 @@ async function main() {
     update: {},
     create: {
       id: 'prod-combo-menu',
+      restaurantId: restaurant.id,
       categoryId: categories['Burger im Menü'].id,
       name: 'Burger im Menü Deal',
       description: 'Add a 0.3L Softdrink + Stealth Fries + Sauce to any burger',
@@ -497,6 +506,7 @@ async function main() {
       update: {},
       create: {
         id: f.id,
+        restaurantId: restaurant.id,
         categoryId: categories['Stealth Fries / Loaded'].id,
         name: f.name,
         description: 'Crispy stealth fries seasoned to perfection.',
@@ -521,6 +531,7 @@ async function main() {
       update: {},
       create: {
         id: d.id,
+        restaurantId: restaurant.id,
         categoryId: categories['Getränke'].id,
         name: d.name,
         description: d.desc,
@@ -544,6 +555,7 @@ async function main() {
       update: {},
       create: {
         id: c.id,
+        restaurantId: restaurant.id,
         categoryId: categories['Coffee'].id,
         name: c.name,
         description: 'Freshly brewed artisan coffee.',
@@ -567,6 +579,7 @@ async function main() {
       update: {},
       create: {
         id: s.id,
+        restaurantId: restaurant.id,
         categoryId: categories['Sweets'].id,
         name: s.name,
         description: 'Homemade gourmet dessert.',
@@ -592,6 +605,7 @@ async function main() {
       update: {},
       create: {
         id: t.id,
+        restaurantId: restaurant.id,
         categoryId: categories['Toppings'].id,
         name: t.name,
         description: 'Extra burger topping.',
@@ -613,6 +627,7 @@ async function main() {
       update: {},
       create: {
         id: sp.id,
+        restaurantId: restaurant.id,
         categoryId: categories['Spices'].id,
         name: sp.name,
         description: 'Extreme chilli spice enhancement.',
@@ -638,6 +653,7 @@ async function main() {
       update: {},
       create: {
         id: sc.id,
+        restaurantId: restaurant.id,
         categoryId: categories['Saucen'].id,
         name: sc.name,
         description: 'Signature dip & sauce.',
@@ -879,6 +895,7 @@ async function main() {
       update: {},
       create: {
         shortId: 'OR-9204',
+        restaurantId: restaurant.id,
         locationId: demoLocation.id,
         customerName: 'David Miller',
         orderType: 'TAKEAWAY',
@@ -900,6 +917,7 @@ async function main() {
       update: {},
       create: {
         shortId: 'OR-9202',
+        restaurantId: restaurant.id,
         locationId: demoLocation.id,
         customerName: 'Marco Rossi',
         orderType: 'TAKEAWAY',
@@ -922,6 +940,7 @@ async function main() {
       update: {},
       create: {
         shortId: 'OR-9200',
+        restaurantId: restaurant.id,
         locationId: demoLocation.id,
         customerName: 'Ahmed Khan',
         orderType: 'DELIVERY',
@@ -944,6 +963,7 @@ async function main() {
       update: {},
       create: {
         shortId: 'OR-9199',
+        restaurantId: restaurant.id,
         locationId: demoLocation.id,
         customerName: 'Emma Watson',
         orderType: 'TAKEAWAY',
@@ -979,6 +999,232 @@ async function main() {
     }
     console.log('Seeded initial demo orders and payment transactions.');
   }
+
+  // 22. Seed Additional Restaurant: "Bella Italia Trattoria"
+  const bellaItalia = await prisma.restaurant.upsert({
+    where: { slug: 'bella-italia' },
+    update: {},
+    create: {
+      id: 'd3b07384-d113-4e4e-862d-0b32525164d5',
+      slug: 'bella-italia',
+      name: 'Bella Italia Trattoria',
+      description: 'Authentic Neapolitan wood-fired pizzas, fresh handmade pasta & Italian wines.',
+      website: 'https://bellaitalia.com',
+      logoUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80',
+      isActive: true,
+    },
+  });
+
+  const bellaLoc = await prisma.restaurantLocation.upsert({
+    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164d6' },
+    update: {},
+    create: {
+      id: 'd3b07384-d113-4e4e-862d-0b32525164d6',
+      restaurantId: bellaItalia.id,
+      name: 'Trastevere Branch',
+      addressLine1: 'Corso Italia 12',
+      city: 'Rome',
+      postalCode: '00153',
+      country: 'Italy',
+      isActive: true,
+    },
+  });
+
+  const bellaPizzaCat = await prisma.menuCategory.upsert({
+    where: { id: 'cat-bella-pizza' },
+    update: {},
+    create: {
+      id: 'cat-bella-pizza',
+      restaurantId: bellaItalia.id,
+      locationId: bellaLoc.id,
+      name: 'Wood-Fired Pizzas',
+      sortOrder: 1,
+    },
+  });
+
+  const bellaPastaCat = await prisma.menuCategory.upsert({
+    where: { id: 'cat-bella-pasta' },
+    update: {},
+    create: {
+      id: 'cat-bella-pasta',
+      restaurantId: bellaItalia.id,
+      locationId: bellaLoc.id,
+      name: 'Fresh Handmade Pasta',
+      sortOrder: 2,
+    },
+  });
+
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-bella-margherita' },
+    update: {},
+    create: {
+      id: 'prod-bella-margherita',
+      restaurantId: bellaItalia.id,
+      categoryId: bellaPizzaCat.id,
+      name: 'Margherita Verace D.O.P.',
+      description: 'San Marzano tomatoes, fresh buffalo mozzarella, basil, extra virgin olive oil.',
+      basePrice: 11.50,
+      imageUrl: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=500&q=80',
+      isAvailable: true,
+    },
+  });
+
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-bella-truffle-pasta' },
+    update: {},
+    create: {
+      id: 'prod-bella-truffle-pasta',
+      restaurantId: bellaItalia.id,
+      categoryId: bellaPastaCat.id,
+      name: 'Truffle & Porcini Tagliatelle',
+      description: 'Fresh egg tagliatelle with black truffle butter sauce and roasted wild porcini.',
+      basePrice: 16.00,
+      imageUrl: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=500&q=80',
+      isAvailable: true,
+    },
+  });
+
+  // 23. Seed Additional Restaurant: "Tokyo Sushi & Ramen"
+  const tokyoSushi = await prisma.restaurant.upsert({
+    where: { slug: 'tokyo-sushi' },
+    update: {},
+    create: {
+      id: 'd3b07384-d113-4e4e-862d-0b32525164d7',
+      slug: 'tokyo-sushi',
+      name: 'Tokyo Sushi & Ramen',
+      description: 'Artisan slow-simmered ramen broths, fresh salmon nigiri, and dragon rolls.',
+      website: 'https://tokyosushi.com',
+      logoUrl: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=400&q=80',
+      isActive: true,
+    },
+  });
+
+  const tokyoLoc = await prisma.restaurantLocation.upsert({
+    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164d8' },
+    update: {},
+    create: {
+      id: 'd3b07384-d113-4e4e-862d-0b32525164d8',
+      restaurantId: tokyoSushi.id,
+      name: 'Ginza Central',
+      addressLine1: 'Via Flaminia 88',
+      city: 'Rome',
+      postalCode: '00196',
+      country: 'Italy',
+      isActive: true,
+    },
+  });
+
+  const ramenCat = await prisma.menuCategory.upsert({
+    where: { id: 'cat-tokyo-ramen' },
+    update: {},
+    create: {
+      id: 'cat-tokyo-ramen',
+      restaurantId: tokyoSushi.id,
+      locationId: tokyoLoc.id,
+      name: 'Artisan Ramen',
+      sortOrder: 1,
+    },
+  });
+
+  const sushiCat = await prisma.menuCategory.upsert({
+    where: { id: 'cat-tokyo-sushi' },
+    update: {},
+    create: {
+      id: 'cat-tokyo-sushi',
+      restaurantId: tokyoSushi.id,
+      locationId: tokyoLoc.id,
+      name: 'Chef Specialty Rolls',
+      sortOrder: 2,
+    },
+  });
+
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-tonkotsu-ramen' },
+    update: {},
+    create: {
+      id: 'prod-tonkotsu-ramen',
+      restaurantId: tokyoSushi.id,
+      categoryId: ramenCat.id,
+      name: 'Black Garlic Tonkotsu Ramen',
+      description: 'Rich 18-hour pork broth, chashu pork belly, ajitsuke tamago egg, nori, black garlic oil.',
+      basePrice: 15.50,
+      imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=500&q=80',
+      isAvailable: true,
+    },
+  });
+
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-dragon-roll' },
+    update: {},
+    create: {
+      id: 'prod-dragon-roll',
+      restaurantId: tokyoSushi.id,
+      categoryId: sushiCat.id,
+      name: 'Spicy Dragon Roll (8 pcs)',
+      description: 'Tempura shrimp, spicy tuna, cucumber, topped with avocado, unagi sauce & tobiko.',
+      basePrice: 14.80,
+      imageUrl: 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?auto=format&fit=crop&w=500&q=80',
+      isAvailable: true,
+    },
+  });
+
+  // 24. Seed Additional Restaurant: "Smash Burger Express"
+  const smashExpress = await prisma.restaurant.upsert({
+    where: { slug: 'smash-burger-express' },
+    update: {},
+    create: {
+      id: 'd3b07384-d113-4e4e-862d-0b32525164d9',
+      slug: 'smash-burger-express',
+      name: 'Smash Burger Express',
+      description: 'Ultra-crispy double smash patties, melted American cheese, and thick milkshakes.',
+      logoUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80',
+      isActive: true,
+    },
+  });
+
+  const smashLoc = await prisma.restaurantLocation.upsert({
+    where: { id: 'd3b07384-d113-4e4e-862d-0b32525164e0-loc' },
+    update: {},
+    create: {
+      id: 'd3b07384-d113-4e4e-862d-0b32525164e0-loc',
+      restaurantId: smashExpress.id,
+      name: 'Downtown Express',
+      addressLine1: 'Piazza Navona 4',
+      city: 'Rome',
+      postalCode: '00186',
+      country: 'Italy',
+      isActive: true,
+    },
+  });
+
+  const smashCat = await prisma.menuCategory.upsert({
+    where: { id: 'cat-smash-burgers' },
+    update: {},
+    create: {
+      id: 'cat-smash-burgers',
+      restaurantId: smashExpress.id,
+      locationId: smashLoc.id,
+      name: 'Double Smash Burgers',
+      sortOrder: 1,
+    },
+  });
+
+  await prisma.menuItem.upsert({
+    where: { id: 'prod-double-oklahoma' },
+    update: {},
+    create: {
+      id: 'prod-double-oklahoma',
+      restaurantId: smashExpress.id,
+      categoryId: smashCat.id,
+      name: 'Oklahoma Double Onion Smash',
+      description: 'Thinly shaved caramelized onions smashed directly into 2 beef patties, American cheese, house pickle mayo.',
+      basePrice: 10.90,
+      imageUrl: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=500&q=80',
+      isAvailable: true,
+    },
+  });
+
+  console.log('Seeded multiple restaurants (Oh Richi, Bella Italia, Tokyo Sushi, Smash Express).');
 
   console.log('Seeding completed successfully!');
 }
