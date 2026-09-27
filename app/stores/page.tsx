@@ -2,323 +2,55 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import CustomerLayout from '../components/CustomerLayout';
 import { useCart } from '../components/CartContext';
 
-interface StoreItem {
-  id: string;
-  slug: string;
-  name: string;
-  categoryTag: string;
-  rating: number;
-  reviewsCount: number;
-  deliveryTime: string;
-  deliveryFee: string;
-  promoBadge?: string;
-  imageUrl: string;
-  isFavorite?: boolean;
-}
-
-const STORES_LIST: StoreItem[] = [
-  {
-    id: 'pizza-house',
-    slug: 'oh-richi',
-    name: 'Pizza House',
-    categoryTag: 'Fast Food • Restaurant',
-    rating: 4.5,
-    reviewsCount: 1200,
-    deliveryTime: '30 min',
-    deliveryFee: '$2.00',
-    promoBadge: '20% OFF',
-    imageUrl: '/pizza_house_store.jpg',
-  },
-  {
-    id: 'fresh-mart',
-    slug: 'bella-italia',
-    name: 'Fresh Mart',
-    categoryTag: 'Grocery • Supermarket',
-    rating: 4.3,
-    reviewsCount: 856,
-    deliveryTime: '25 min',
-    deliveryFee: '$1.50',
-    imageUrl: '/fresh_mart_store.jpg',
-  },
-  {
-    id: 'city-pharmacy',
-    slug: 'tokyo-sushi',
-    name: 'City Pharmacy',
-    categoryTag: 'Pharmacy • Health',
-    rating: 4.7,
-    reviewsCount: 642,
-    deliveryTime: '20 min',
-    deliveryFee: '$1.00',
-    imageUrl: '/door2door_promo_box.jpg',
-  },
-  {
-    id: 'fashion-hub',
-    slug: 'smash-burger-express',
-    name: 'Fashion Hub',
-    categoryTag: 'Clothing • Fashion',
-    rating: 4.2,
-    reviewsCount: 453,
-    deliveryTime: '35 min',
-    deliveryFee: '$2.50',
-    imageUrl: '/door2door_hero_rider.jpg',
-  },
-  {
-    id: 'tech-world',
-    slug: 'oh-richi',
-    name: 'Tech World',
-    categoryTag: 'Electronics • Gadgets',
-    rating: 4.6,
-    reviewsCount: 321,
-    deliveryTime: '40 min',
-    deliveryFee: '$3.00',
-    imageUrl: '/door2door_logo.jpg',
-  },
-];
-
-const CATEGORY_PILLS = ['All', 'Food', 'Grocery', 'Pharmacy', 'Fashion', 'Electronics'];
+type Tab = 'stores' | 'products';
+type Store = { id: string; slug: string; name: string; description?: string | null; logoUrl?: string | null; locations?: { city: string }[]; _count?: { menuItems: number } };
+type Product = { id: string; name: string; description?: string | null; imageUrl?: string | null; basePrice: number; category?: { name: string }; restaurant?: { id: string; name: string; slug: string; logoUrl?: string | null } };
+const categories = ['All', 'Food', 'Grocery', 'Pharmacy', 'Fashion', 'Electronics'];
 
 export default function StoresListingPage() {
-  const { cart } = useCart();
-  const cartCount = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
+  const params = useSearchParams();
+  const { cartCount, addToCart } = useCart();
+  const [tab, setTab] = useState<Tab>(params.get('tab') === 'products' ? 'products' : 'stores');
+  const [query, setQuery] = useState(params.get('q') || '');
+  const [category, setCategory] = useState('All');
+  const [stores, setStores] = useState<Store[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  useEffect(() => { setQuery(params.get('q') || ''); if (params.get('tab') === 'products') setTab('products'); }, [params]);
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        if (query.trim()) {
+          const response = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+          if (!response.ok) throw new Error('Search failed');
+          const data = await response.json();
+          if (active) { setStores(data.restaurants || []); setProducts(data.products || []); }
+        } else {
+          const [storeResponse, productResponse] = await Promise.all([fetch('/api/restaurants'), fetch('/api/menu')]);
+          if (active) { setStores(storeResponse.ok ? await storeResponse.json() : []); setProducts(productResponse.ok ? await productResponse.json() : []); }
+        }
+      } catch { if (active) { setStores([]); setProducts([]); } } finally { if (active) setLoading(false); }
+    }, 180);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [query]);
 
-  const toggleFavorite = (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const matchingStores = useMemo(() => stores.filter((store) => category === 'All' || `${store.name} ${store.description || ''}`.toLowerCase().includes(category.toLowerCase())), [stores, category]);
+  const matchingProducts = useMemo(() => products.filter((product) => category === 'All' || `${product.name} ${product.description || ''} ${product.category?.name || ''} ${product.restaurant?.name || ''}`.toLowerCase().includes(category.toLowerCase())), [products, category]);
+  const addProduct = (product: Product) => addToCart({ restaurantId: product.restaurant?.id, itemId: product.id, name: product.name, imageUrl: product.imageUrl || null, basePrice: Number(product.basePrice), quantity: 1, variation: null, spiceLevel: null, addons: [], notes: '' });
 
-  const filteredStores = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    return STORES_LIST.filter((s) => {
-      const matchesSearch = !query || s.name.toLowerCase().includes(query) || s.categoryTag.toLowerCase().includes(query);
-      const matchesCategory = selectedCategory === 'All'
-        || (selectedCategory === 'Food' && s.categoryTag.toLowerCase().includes('restaurant'))
-        || (selectedCategory === 'Grocery' && s.categoryTag.toLowerCase().includes('grocery'))
-        || (selectedCategory === 'Pharmacy' && s.categoryTag.toLowerCase().includes('pharmacy'))
-        || (selectedCategory === 'Fashion' && s.categoryTag.toLowerCase().includes('fashion'))
-        || (selectedCategory === 'Electronics' && s.categoryTag.toLowerCase().includes('electronics'));
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchQuery, selectedCategory]);
-
-  return (
-    <CustomerLayout>
-      <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
-        
-        {/* HEADER & LOCATION */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Stores</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', fontWeight: 800, color: '#F95700', backgroundColor: '#fff7ed', padding: '6px 14px', borderRadius: '20px' }}>
-            <span>📍</span>
-            <span>New York, NY</span>
-            <span style={{ fontSize: '0.75rem' }}>▼</span>
-          </div>
-        </div>
-
-        {/* SEARCH BAR */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: '#ffffff',
-            borderRadius: '20px',
-            padding: '8px 16px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-            border: '1.5px solid #e2e8f0',
-            marginBottom: '20px',
-          }}
-        >
-          <span style={{ color: '#94a3b8', marginRight: '10px' }}>🔍</span>
-          <input
-            type="search"
-            placeholder="Search restaurants, cuisines..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              flex: 1,
-              border: 'none',
-              outline: 'none',
-              fontSize: '1rem',
-              fontWeight: 600,
-              color: '#0f172a',
-            }}
-          />
-          <button
-            type="button"
-            style={{
-              backgroundColor: '#F95700',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '6px 12px',
-              cursor: 'pointer',
-            }}
-          >
-            ⚙️
-          </button>
-        </div>
-
-        {/* CATEGORY FILTER PILLS */}
-        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '24px' }}>
-          {CATEGORY_PILLS.map((cat) => (
-            <button
-              type="button"
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              style={{
-                backgroundColor: selectedCategory === cat ? '#F95700' : '#ffffff',
-                color: selectedCategory === cat ? '#ffffff' : '#64748b',
-                border: selectedCategory === cat ? 'none' : '1px solid #e2e8f0',
-                borderRadius: '20px',
-                padding: '8px 20px',
-                fontWeight: 800,
-                fontSize: '0.88rem',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                boxShadow: selectedCategory === cat ? '0 4px 12px rgba(249, 87, 0, 0.25)' : 'none',
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* VERTICAL STORE LIST */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {filteredStores.map((store) => (
-            <Link
-              href={`/restaurants/${store.slug}`}
-              key={store.id}
-              style={{ textDecoration: 'none' }}
-            >
-              <article
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '24px',
-                  padding: '16px',
-                  display: 'flex',
-                  gap: '16px',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
-                  position: 'relative',
-                }}
-              >
-                {/* Store Thumbnail */}
-                <div style={{ position: 'relative', width: '110px', height: '110px', flexShrink: 0, borderRadius: '18px', overflow: 'hidden' }}>
-                  <img
-                    src={store.imageUrl}
-                    alt={store.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/burger_hero.png'; }}
-                  />
-                  {store.promoBadge && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        left: '8px',
-                        backgroundColor: '#ef4444',
-                        color: '#ffffff',
-                        fontSize: '0.68rem',
-                        fontWeight: 900,
-                        padding: '3px 8px',
-                        borderRadius: '10px',
-                      }}
-                    >
-                      {store.promoBadge}
-                    </span>
-                  )}
-                </div>
-
-                {/* Store Info */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>
-                      {store.name}
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={(e) => toggleFavorite(store.id, e)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        fontSize: '1.2rem',
-                        cursor: 'pointer',
-                        color: favorites[store.id] ? '#ef4444' : '#cbd5e1',
-                      }}
-                    >
-                      ♥
-                    </button>
-                  </div>
-
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b', marginTop: '4px' }}>
-                    {store.categoryTag}
-                  </span>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '10px', fontSize: '0.82rem', fontWeight: 800, color: '#334155' }}>
-                    <span style={{ color: '#f59e0b' }}>★ {store.rating} ({store.reviewsCount})</span>
-                    <span>⏱ {store.deliveryTime}</span>
-                    <span>🛵 {store.deliveryFee}</span>
-                  </div>
-                </div>
-              </article>
-            </Link>
-          ))}
-        </div>
-
-        {/* BOTTOM NAVIGATION BAR */}
-        <nav
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: '#ffffff',
-            borderTop: '1px solid #e2e8f0',
-            padding: '10px 24px',
-            display: 'flex',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            zIndex: 100,
-          }}
-        >
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#64748b', fontWeight: 800, fontSize: '0.78rem' }}>
-            <span style={{ fontSize: '1.3rem' }}>🏠</span>
-            <span>Home</span>
-          </Link>
-          <button type="button" style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#F95700', fontWeight: 800, fontSize: '0.78rem' }}>
-            <span style={{ fontSize: '1.3rem' }}>🏪</span>
-            <span>Stores</span>
-          </button>
-          <Link href="/checkout" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#64748b', fontWeight: 800, fontSize: '0.78rem', position: 'relative' }}>
-            <span style={{ fontSize: '1.3rem', position: 'relative' }}>
-              🛒
-              {cartCount > 0 && (
-                <span style={{ position: 'absolute', top: '-6px', right: '-10px', backgroundColor: '#F95700', color: '#ffffff', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
-                  {cartCount}
-                </span>
-              )}
-            </span>
-            <span>Cart</span>
-          </Link>
-          <Link href="/orders" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#64748b', fontWeight: 800, fontSize: '0.78rem' }}>
-            <span style={{ fontSize: '1.3rem' }}>📋</span>
-            <span>Orders</span>
-          </Link>
-          <Link href="/dashboard" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#64748b', fontWeight: 800, fontSize: '0.78rem' }}>
-            <span style={{ fontSize: '1.3rem' }}>•••</span>
-            <span>More</span>
-          </Link>
-        </nav>
-
-      </div>
-    </CustomerLayout>
-  );
+  return <CustomerLayout><main className="d2d-discovery-page">
+    <header className="d2d-discovery-header"><Link href="/" aria-label="Back to home" className="d2d-back-button">←</Link><div className="d2d-discovery-brand"><img src="/door2door_logo.jpg" alt="Door2Door" /><div><strong>Door<span>2</span>Door</strong><small>Your Parcel · Our Priority</small></div></div></header>
+    <label className="d2d-discovery-search"><span aria-hidden="true">⌕</span><input autoFocus type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === 'stores' ? 'Search stores...' : 'Search products...'} /><span className="d2d-filter-button" aria-hidden="true">☷</span></label>
+    <div className="d2d-discovery-tabs" role="tablist"><button type="button" className={tab === 'stores' ? 'active' : ''} onClick={() => setTab('stores')}>Stores</button><button type="button" className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}>Products</button></div>
+    <div className="d2d-category-pills">{categories.map((item) => <button type="button" key={item} className={category === item ? 'active' : ''} onClick={() => setCategory(item)}>{item}</button>)}</div>
+    {loading ? <p className="d2d-discovery-empty">Searching marketplace…</p> : tab === 'stores' ? <section className="d2d-results-list">{matchingStores.map((store) => <Link href={`/restaurants/${store.slug}`} key={store.id} className="d2d-store-result"><img src={store.logoUrl || '/door2door_logo.jpg'} alt="" /><div><h2>{store.name}</h2><p>{store.description || 'Marketplace store'} · {store.locations?.[0]?.city || 'Nearby'}</p><span>★ Marketplace store · {store._count?.menuItems || 0} products</span></div><b>›</b></Link>)}{matchingStores.length === 0 && <p className="d2d-discovery-empty">No stores match your search.</p>}</section> : <section className="d2d-product-results">{matchingProducts.map((product) => <article key={product.id} className="d2d-product-result"><img src={product.imageUrl || '/burger_hero.png'} alt="" /><div><p>{product.restaurant?.name || product.category?.name || 'Marketplace product'}</p><h2>{product.name}</h2><span>{product.description || 'Available now'}</span><strong>€{Number(product.basePrice).toFixed(2)}</strong></div><button type="button" onClick={() => addProduct(product)} aria-label={`Add ${product.name} to cart`}>+</button></article>)}{matchingProducts.length === 0 && <p className="d2d-discovery-empty">No products match your search.</p>}</section>}
+    {cartCount > 0 && <Link href="/checkout" className="d2d-discovery-cart">Cart ({cartCount})</Link>}
+  </main></CustomerLayout>;
 }

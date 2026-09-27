@@ -24,11 +24,6 @@ export async function GET(
           include: {
             menuItems: {
               where: { isActive: true },
-              include: {
-                variations: { where: { isAvailable: true } },
-                itemAddons: { include: { addon: true } },
-                itemSpiceLevels: { include: { spiceLevel: true } },
-              },
             },
           },
         },

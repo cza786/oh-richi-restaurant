@@ -126,22 +126,6 @@ export default function Sidebar({ user }: SidebarProps) {
       ),
       visible: !isKitchenStaff && !isCashier,
     },
-    {
-      name: 'Loyalty Admin',
-      path: '/dashboard/loyalty',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-      ),
-      visible: !isKitchenStaff && !isCashier,
-    },
-    {
-      name: 'Promotions & Discounts',
-      path: '/dashboard/promotions',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-      ),
-      visible: !isKitchenStaff && !isCashier,
-    },
   ];
 
   return (

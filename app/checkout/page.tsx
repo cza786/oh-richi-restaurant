@@ -57,16 +57,10 @@ export default function CheckoutPage() {
 
     const orderItemsPayload = cart.map((item) => ({
       itemId: item.itemId,
-      variationId: item.variation?.id || null,
-      spiceLevelId: item.spiceLevel?.id || null,
       quantity: item.quantity,
-      unitPrice: item.basePrice + (item.variation?.priceDifference || 0) + (item.spiceLevel?.priceDifference || 0),
-      subtotal: (item.basePrice + (item.variation?.priceDifference || 0) + (item.spiceLevel?.priceDifference || 0)) * item.quantity,
+      unitPrice: item.basePrice,
+      subtotal: item.basePrice * item.quantity,
       notes: item.notes || null,
-      addons: item.addons.map((a) => ({
-        addonId: a.id,
-        price: a.price,
-      })),
     }));
 
     try {

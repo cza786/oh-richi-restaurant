@@ -50,9 +50,6 @@ export async function GET(request: Request) {
             logoUrl: true,
           },
         },
-        variations: { where: { isAvailable: true } },
-        itemAddons: { include: { addon: true } },
-        itemSpiceLevels: { include: { spiceLevel: true } },
       },
       take: 20,
     });

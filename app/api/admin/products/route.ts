@@ -21,7 +21,6 @@ export async function GET(request: Request) {
       include: {
         category: { select: { id: true, name: true } },
         restaurant: { select: { id: true, name: true, slug: true } },
-        variations: true,
       },
       orderBy: { createdAt: 'desc' },
     });

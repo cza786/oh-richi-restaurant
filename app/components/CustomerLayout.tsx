@@ -156,7 +156,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           >
             <Icon name="menu" />
           </button>
-          <Link href="/" className="richi-logo-wrap" aria-label="Oh Richi home" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+          <Link href="/" className="richi-logo-wrap" aria-label="Door2Door home" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
             {logoUrl ? (
               <img 
                 src={logoUrl} 
@@ -165,18 +165,29 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
               />
             ) : (
-              <span className="richi-logo">Oh<span>Richi</span><i>.</i></span>
+              <span className="d2d-header-brand">
+                <img src="/door2door_logo.jpg" alt="Door2Door" />
+                <span>
+                  <strong>Door<span>2</span>Door</strong>
+                  <small>Your Parcel · Our Priority</small>
+                </span>
+              </span>
             )}
           </Link>
 
           <nav className="richi-desktop-nav" aria-label="Main navigation" suppressHydrationWarning>
-            <Link href="/" className={mounted && (safePath === '/' || safePath.startsWith('/restaurants')) ? 'active' : ''}>RESTAURANTS</Link>
-            <Link href="/menu" className={mounted && safePath.startsWith('/menu') ? 'active' : ''}>MENU</Link>
-            <Link href="/orders" className={mounted && safePath.startsWith('/orders') ? 'active' : ''}>ORDER HISTORY</Link>
-            <Link href="/promotions" className={mounted && safePath === '/promotions' ? 'active' : ''}>PROMOTIONS</Link>
-            <Link href="/rewards" className={mounted && safePath === '/rewards' ? 'active' : ''}>REWARDS</Link>
-            <Link href="/track-order" className={mounted && safePath.startsWith('/track-order') ? 'active' : ''}>TRACK ORDER</Link>
-            <Link href="/about" className={mounted && safePath === '/about' ? 'active' : ''}>ABOUT US</Link>
+            <Link href="/" className={mounted && safePath === '/' ? 'active' : ''}>HOME</Link>
+            <Link href="/stores" className={mounted && safePath.startsWith('/stores') || safePath.startsWith('/restaurants') ? 'active' : ''}>STORES</Link>
+            <button
+              type="button"
+              className={cartOpen ? 'active' : ''}
+              onClick={() => setCartOpen(true)}
+              aria-label={`Open cart with ${cartCount} items`}
+            >
+              CART{cartCount > 0 ? ` (${cartCount})` : ''}
+            </button>
+            <Link href="/orders" className={mounted && safePath.startsWith('/orders') ? 'active' : ''}>ORDERS</Link>
+            <Link href={user ? '/account' : '/customer/login'} className={mounted && safePath.startsWith('/account') ? 'active' : ''}>MORE</Link>
           </nav>
 
           <div className="richi-nav-actions">
@@ -260,7 +271,6 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                         👤 My Detail Profile
                       </button>
                       <Link href="/account" onClick={() => setProfileOpen(false)} style={{ display: 'block', color: '#cbd5e1', textDecoration: 'none', padding: '8px 0', fontSize: '0.88rem', fontWeight: 600 }}>My account</Link>
-                      <Link href="/rewards" onClick={() => setProfileOpen(false)} style={{ display: 'block', color: '#cbd5e1', textDecoration: 'none', padding: '8px 0', fontSize: '0.88rem', fontWeight: 600 }}>Rewards balance</Link>
                       <button
                         type="button"
                         onClick={logout}
@@ -319,8 +329,6 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       {mobileMenuOpen && (
         <nav className="richi-mobile-menu-panel" aria-label="Customer shortcuts">
           <Link href="/menu">Menu</Link>
-          <Link href="/promotions">Promotions</Link>
-          <Link href="/rewards">Rewards</Link>
           <Link href="/track-order">Track Order</Link>
           <Link href="/about">About Us</Link>
         </nav>
@@ -328,10 +336,10 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       <main className="richi-customer-main">{children}</main>
       <nav className="richi-mobile-tabs" aria-label="Mobile navigation" suppressHydrationWarning>
         <Link href="/" className={mounted && safePath === '/' ? 'active' : ''}><Icon name="home" /><span>Home</span></Link>
-        <Link href="/menu" className={mounted && safePath.startsWith('/menu') ? 'active' : ''}><Icon name="grid" /><span>Menu</span></Link>
-        <Link href="/promotions" className={mounted && safePath === '/promotions' ? 'active' : ''}><Icon name="gift" /><span>Deals</span></Link>
-        <Link href="/track-order" className={mounted && safePath.startsWith('/track-order') ? 'active' : ''}><Icon name="orders" /><span>Orders</span></Link>
-        <Link href={user ? '/account' : '/customer/login'} className={mounted && safePath === '/account' ? 'active' : ''}><Icon name="user" /><span>Profile</span></Link>
+        <Link href="/stores" className={mounted && (safePath.startsWith('/stores') || safePath.startsWith('/restaurants')) ? 'active' : ''}><Icon name="grid" /><span>Stores</span></Link>
+        <button type="button" onClick={() => setCartOpen(true)} aria-label={`Open cart with ${cartCount} items`}><span className="richi-mobile-bag"><Icon name="bag" />{cartCount > 0 && <b>{cartCount}</b>}</span><span>Cart</span></button>
+        <Link href="/orders" className={mounted && safePath.startsWith('/orders') ? 'active' : ''}><Icon name="orders" /><span>Orders</span></Link>
+        <Link href={user ? '/account' : '/customer/login'} className={mounted && safePath.startsWith('/account') ? 'active' : ''}><Icon name="user" /><span>More</span></Link>
       </nav>
       {cartOpen && (
         <>

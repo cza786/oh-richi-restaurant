@@ -3,7 +3,6 @@
 import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import CustomerLayout from '../../components/CustomerLayout';
-import ProductCustomizerModal from '../../components/ProductCustomizerModal';
 import { useCart } from '../../components/CartContext';
 
 type PriceValue = number | string;
@@ -16,13 +15,6 @@ interface MenuItem {
   basePrice: PriceValue;
   isAvailable?: boolean;
   category: { name: string };
-  variations: Array<{ id: string; name: string; priceDifference: PriceValue }>;
-  itemSpiceLevels: Array<{
-    spiceLevel: { id: string; name: string; value: number; priceDifference: PriceValue };
-  }>;
-  itemAddons: Array<{
-    addon: { id: string; name: string; price: PriceValue; isAvailable?: boolean };
-  }>;
 }
 
 interface RestaurantData {
@@ -65,8 +57,23 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
   const [activeTab, setActiveTab] = useState<'menu' | 'info' | 'reviews'>('menu');
   const [isFavorite, setIsFavorite] = useState(false);
 
-  const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
   const [toast, setToast] = useState('');
+
+  const addPlainItemToCart = (item: MenuItem) => {
+    addToCart({
+      restaurantId: restaurant?.id,
+      itemId: item.id,
+      name: item.name,
+      imageUrl: item.imageUrl || null,
+      basePrice: Number(item.basePrice),
+      quantity: 1,
+      notes: '',
+      variation: null,
+      spiceLevel: null,
+      addons: [],
+    });
+    setToast(`Added ${item.name} to cart!`);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -444,7 +451,7 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
 
                         <button
                           type="button"
-                          onClick={() => setCustomizingItem(item)}
+                          onClick={() => addPlainItemToCart(item)}
                           style={{
                             backgroundColor: '#F95700',
                             color: '#ffffff',
@@ -539,41 +546,6 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
         </nav>
 
         {toast && <div className="richi-toast" role="status"><span>✓</span>{toast}</div>}
-
-        {/* Product Customizer Modal */}
-        <ProductCustomizerModal
-          item={customizingItem}
-          onClose={() => setCustomizingItem(null)}
-          onAddToCart={({ item: customizedItem, quantity, variation, spiceLevel, addons, notes }) => {
-            addToCart({
-              restaurantId: restaurant?.id,
-              itemId: customizedItem.id,
-              name: customizedItem.name,
-              imageUrl: customizedItem.imageUrl || null,
-              basePrice: Number(customizedItem.basePrice),
-              quantity,
-              notes: notes || '',
-              variation: variation ? {
-                id: variation.id,
-                name: variation.name,
-                priceDifference: Number(variation.priceDifference || 0),
-              } : null,
-              spiceLevel: spiceLevel ? {
-                id: spiceLevel.id,
-                name: spiceLevel.name,
-                priceDifference: Number(spiceLevel.priceDifference || 0),
-              } : null,
-              addons: addons.map((a: any) => ({
-                id: a.id,
-                name: a.name,
-                price: Number(a.price),
-                quantity: a.quantity || 1,
-              })),
-            });
-            setToast(`Added ${customizedItem.name} to cart!`);
-            setCustomizingItem(null);
-          }}
-        />
 
       </div>
     </CustomerLayout>

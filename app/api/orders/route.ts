@@ -222,28 +222,12 @@ export async function POST(request: Request) {
             data: {
               orderId: order.id,
               itemId: item.itemId,
-              variationId: item.variationId || null,
-              spiceLevelId: item.spiceLevelId || null,
               quantity: item.quantity,
               unitPrice: Number(item.unitPrice),
               subtotal: Number(item.subtotal),
               notes: item.notes || null,
             },
           });
-
-          // Create addons for this order item
-          if (item.addons && item.addons.length > 0) {
-            for (const addon of item.addons) {
-              await tx.orderItemAddon.create({
-                data: {
-                  orderItemId: orderItem.id,
-                  addonId: addon.addonId,
-                  unitPrice: Number(addon.price),
-                  quantity: 1,
-                },
-              });
-            }
-          }
         }
       }
 

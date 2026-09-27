@@ -22,20 +22,12 @@ export const signupSchema = z.object({
 });
 
 // 2. Order Schemas
-export const orderItemAddonSchema = z.object({
-  addonId: z.string().min(1, 'Addon ID is required.'),
-  price: numericField,
-});
-
 export const orderItemSchema = z.object({
   itemId: z.string().min(1, 'Item ID is required.'),
-  variationId: z.string().optional().nullable(),
-  spiceLevelId: z.string().optional().nullable(),
   quantity: z.preprocess((val) => Number(val), z.number().int().positive('Item quantity must be at least 1.')),
   unitPrice: numericField,
   subtotal: numericField,
   notes: z.string().optional().nullable(),
-  addons: z.array(orderItemAddonSchema).optional(),
 });
 
 export const createOrderSchema = z.object({

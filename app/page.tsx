@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import CustomerLayout from './components/CustomerLayout';
 import FireParticles from './components/FireParticles';
-import ProductCustomizerModal from './components/ProductCustomizerModal';
 import { useCart } from './components/CartContext';
 
 interface Restaurant {
@@ -37,13 +37,6 @@ interface MenuItem {
     slug: string;
     logoUrl: string | null;
   };
-  variations?: Array<{ id: string; name: string; priceDifference: number }>;
-  itemSpiceLevels?: Array<{
-    spiceLevel: { id: string; name: string; value: number; priceDifference: number };
-  }>;
-  itemAddons?: Array<{
-    addon: { id: string; name: string; price: number; isAvailable?: boolean };
-  }>;
 }
 
 const FALLBACK_RESTAURANTS: Restaurant[] = [
@@ -152,6 +145,7 @@ function FilterIcon() {
 }
 
 export default function Door2DoorMarketplaceHomePage() {
+  const router = useRouter();
   const { cart, addToCart } = useCart();
   const itemsCount = useMemo(() => cart.reduce((total, i) => total + i.quantity, 0), [cart]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -162,8 +156,23 @@ export default function Door2DoorMarketplaceHomePage() {
   const [selectedCategory, setSelectedCategory] = useState('Food');
   const [activeTab, setActiveTab] = useState<'restaurants' | 'products'>('restaurants');
 
-  const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
   const [toast, setToast] = useState('');
+
+  const addPlainProductToCart = (item: MenuItem) => {
+    addToCart({
+      restaurantId: item.restaurant?.id,
+      itemId: item.id,
+      name: item.name,
+      imageUrl: item.imageUrl || null,
+      basePrice: Number(item.basePrice),
+      quantity: 1,
+      notes: '',
+      variation: null,
+      spiceLevel: null,
+      addons: [],
+    });
+    setToast(`Added ${item.name} to your cart!`);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -248,6 +257,7 @@ export default function Door2DoorMarketplaceHomePage() {
         
         {/* HERO SECTION WITH DOOR2DOOR BRANDING & BANNER */}
         <section
+          className="d2d-hero-container"
           style={{
             position: 'relative',
             borderRadius: '28px',
@@ -260,6 +270,7 @@ export default function Door2DoorMarketplaceHomePage() {
           }}
         >
           <div
+            className="d2d-hero-content"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
@@ -268,7 +279,7 @@ export default function Door2DoorMarketplaceHomePage() {
             }}
           >
             {/* Left Content */}
-            <div style={{ zIndex: 2 }}>
+            <div className="d2d-hero-copy" style={{ zIndex: 2 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
                 <img
                   src="/door2door_logo.jpg"
@@ -318,65 +329,12 @@ export default function Door2DoorMarketplaceHomePage() {
                 </span>
               </div>
 
-              {/* SEARCH INPUT */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '20px',
-                  padding: '6px 8px 6px 20px',
-                  boxShadow: '0 12px 32px rgba(249, 87, 0, 0.15)',
-                  border: '2px solid #F95700',
-                  maxWidth: '560px',
-                }}
-              >
-                <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', marginRight: '12px' }}>
-                  <SearchIcon />
-                </span>
-                <input
-                  type="search"
-                  placeholder="Search for stores, products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '1.02rem',
-                    fontWeight: 600,
-                    color: '#0f172a',
-                    background: 'transparent',
-                    padding: '10px 0',
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(activeTab === 'restaurants' ? 'products' : 'restaurants')}
-                  style={{
-                    backgroundColor: '#F95700',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '16px',
-                    width: '46px',
-                    height: '46px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(249, 87, 0, 0.3)',
-                    transition: 'transform 0.2s ease',
-                  }}
-                  title="Filter options"
-                >
-                  <FilterIcon />
-                </button>
-              </div>
             </div>
 
             {/* Right Rider Banner Illustration */}
-            <div style={{ position: 'relative', textAlign: 'center', zIndex: 1 }}>
+            <div className="d2d-hero-rider" style={{ position: 'relative', textAlign: 'center', zIndex: 1 }}>
               <img
+                className="d2d-hero-rider-image"
                 src="/door2door_hero_rider.jpg"
                 alt="Door2Door Delivery Rider"
                 style={{
@@ -388,6 +346,63 @@ export default function Door2DoorMarketplaceHomePage() {
                 }}
               />
             </div>
+          </div>
+
+          {/* Search sits below both hero columns, as in the desktop reference. */}
+          <div
+            className="d2d-hero-search"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              padding: '6px 8px 6px 20px',
+              boxShadow: '0 12px 32px rgba(249, 87, 0, 0.15)',
+              border: '2px solid #F95700',
+              maxWidth: '560px',
+            }}
+          >
+            <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', marginRight: '12px' }}>
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              placeholder="Search for stores, products..."
+              value={searchQuery}
+              onFocus={() => router.push('/stores')}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                fontSize: '1.02rem',
+                fontWeight: 600,
+                color: '#0f172a',
+                background: 'transparent',
+                padding: '10px 0',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'restaurants' ? 'products' : 'restaurants')}
+              style={{
+                backgroundColor: '#F95700',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '16px',
+                width: '46px',
+                height: '46px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(249, 87, 0, 0.3)',
+                transition: 'transform 0.2s ease',
+              }}
+              title="Switch between stores and products"
+            >
+              <FilterIcon />
+            </button>
           </div>
         </section>
 
@@ -690,7 +705,7 @@ export default function Door2DoorMarketplaceHomePage() {
                       <strong style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>€{Number(p.basePrice).toFixed(2)}</strong>
                       <button
                         type="button"
-                        onClick={() => setCustomizingItem(p)}
+                        onClick={() => addPlainProductToCart(p)}
                         style={{
                           backgroundColor: '#F95700',
                           color: '#ffffff',
@@ -850,41 +865,6 @@ export default function Door2DoorMarketplaceHomePage() {
         </nav>
 
         {toast && <div className="richi-toast" role="status"><span>✓</span>{toast}</div>}
-
-        <ProductCustomizerModal
-          item={customizingItem}
-          onClose={() => setCustomizingItem(null)}
-          onAddToCart={({ item: customizedItem, quantity, variation, spiceLevel, addons, notes }) => {
-            const itemWithRest = customizedItem as any;
-            addToCart({
-              restaurantId: itemWithRest.restaurant?.id || itemWithRest.restaurantId,
-              itemId: customizedItem.id,
-              name: customizedItem.name,
-              imageUrl: customizedItem.imageUrl || null,
-              basePrice: Number(customizedItem.basePrice),
-              quantity,
-              notes: notes || '',
-              variation: variation ? {
-                id: variation.id,
-                name: variation.name,
-                priceDifference: Number(variation.priceDifference || 0),
-              } : null,
-              spiceLevel: spiceLevel ? {
-                id: spiceLevel.id,
-                name: spiceLevel.name,
-                priceDifference: Number(spiceLevel.priceDifference || 0),
-              } : null,
-              addons: addons.map((a: any) => ({
-                id: a.id,
-                name: a.name,
-                price: Number(a.price),
-                quantity: a.quantity || 1,
-              })),
-            });
-            setToast(`Added ${customizedItem.name} to your cart!`);
-            setCustomizingItem(null);
-          }}
-        />
 
       </div>
     </CustomerLayout>

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import CustomerLayout from '../components/CustomerLayout';
-import ProductCustomizerModal from '../components/ProductCustomizerModal';
 import { useCart } from '../components/CartContext';
 
 interface MenuItem {
@@ -45,7 +44,6 @@ export default function PublicMenuPage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
-  const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
 
   // Selected variant maps (itemId -> variationId)
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
@@ -109,28 +107,13 @@ export default function PublicMenuPage() {
   };
 
   const handleAddToCart = (item: MenuItem) => {
-    // If adding Carolina Reaper spice, check disclaimer agreement
-    if (item.name.toLowerCase().includes('carolina reaper')) {
-      setReaperModalItem(item);
-      setDisclaimerAgreed(false);
-      return;
-    }
-
-    // Determine variant
-    const selectedVarId = selectedVariants[item.id];
-    const variationObj = item.variations?.find((v) => v.id === selectedVarId) || item.variations?.[0] || null;
-
     addToCart({
       itemId: item.id,
       name: item.name,
       imageUrl: item.imageUrl,
       basePrice: Number(item.basePrice),
       quantity: 1,
-      variation: variationObj ? {
-        id: variationObj.id,
-        name: variationObj.name,
-        priceDifference: Number(variationObj.priceDifference || 0),
-      } : null,
+      variation: null,
       spiceLevel: null,
       addons: [],
       notes: '',
@@ -320,7 +303,7 @@ export default function PublicMenuPage() {
                     {/* Visual & Badges */}
                     <button
                       type="button"
-                      onClick={() => setCustomizingItem(item)}
+                      onClick={() => handleAddToCart(item)}
                       style={{
                         width: '100%',
                         position: 'relative',
@@ -359,7 +342,7 @@ export default function PublicMenuPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                       <button
                         type="button"
-                        onClick={() => setCustomizingItem(item)}
+                        onClick={() => handleAddToCart(item)}
                         style={{ background: 'none', border: 'none', padding: 0, color: '#ffffff', textAlign: 'left', cursor: 'pointer' }}
                       >
                         <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, textTransform: 'uppercase' }}>{item.name}</h3>
@@ -414,7 +397,7 @@ export default function PublicMenuPage() {
                       {item.category?.name === 'Burger im Menü' ? (
                         <button
                           type="button"
-                          onClick={() => setComboModalItem(item)}
+                          onClick={() => handleAddToCart(item)}
                           style={{
                             padding: '10px 18px',
                             background: 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)',
@@ -432,7 +415,7 @@ export default function PublicMenuPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setCustomizingItem(item)}
+                          onClick={() => handleAddToCart(item)}
                           style={{
                             padding: '10px 18px',
                             background: 'linear-gradient(135deg, #ffa000 0%, #ff7000 100%)',
@@ -626,34 +609,6 @@ export default function PublicMenuPage() {
           </div>
         </>
       )}
-      {/* Product Customizer Modal */}
-      <ProductCustomizerModal
-        item={customizingItem}
-        onClose={() => setCustomizingItem(null)}
-        onAddToCart={({ item: customizedItem, quantity, variation, spiceLevel, addons, notes }) => {
-          addToCart({
-            itemId: customizedItem.id,
-            name: customizedItem.name,
-            imageUrl: customizedItem.imageUrl || null,
-            basePrice: Number(customizedItem.basePrice),
-            quantity,
-            variation: variation ? {
-              id: variation.id,
-              name: variation.name,
-              priceDifference: Number(variation.priceDifference || 0),
-            } : null,
-            spiceLevel: spiceLevel ? {
-              id: spiceLevel.id,
-              name: spiceLevel.name,
-              priceDifference: Number(spiceLevel.priceDifference || 0),
-            } : null,
-            addons: addons.map((a) => ({ id: a.id, name: a.name, price: Number(a.price) })),
-            notes,
-          });
-          setToast(`${customizedItem.name} added to cart!`);
-          setCustomizingItem(null);
-        }}
-      />
     </CustomerLayout>
   );
 }

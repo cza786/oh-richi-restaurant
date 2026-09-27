@@ -25,19 +25,6 @@ export async function GET(request: Request) {
       where: whereClause,
       include: {
         category: true,
-        variations: {
-          where: { isAvailable: true }
-        },
-        itemAddons: {
-          include: {
-            addon: true
-          }
-        },
-        itemSpiceLevels: {
-          include: {
-            spiceLevel: true
-          }
-        }
       },
       orderBy: {
         name: 'asc',
