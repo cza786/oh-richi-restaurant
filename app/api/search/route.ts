@@ -34,6 +34,7 @@ export async function GET(request: Request) {
       where: {
         isActive: true,
         isAvailable: true,
+        restaurant: { isActive: true },
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
