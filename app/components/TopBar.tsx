@@ -17,17 +17,7 @@ interface TopBarProps {
 }
 
 export default function TopBar({ user, dateFilter, setDateFilter }: TopBarProps) {
-  // Helper to determine role badge class
-  const getRoleBadgeClass = (roles: string[]) => {
-    const role = roles[0]?.toUpperCase() || '';
-    if (role.includes('OWNER')) return 'badge-owner';
-    if (role.includes('ADMIN')) return 'badge-owner';
-    if (role.includes('MANAGER')) return 'badge-manager';
-    if (role.includes('CASHIER')) return 'badge-cashier';
-    return 'badge-staff';
-  };
-
-  const formattedRole = user.roles[0]?.replace('_', ' ') || 'Staff';
+  const formattedRole = 'SUPER ADMIN';
 
   const dateFilters = [
     { label: 'Today', value: 'today' },
@@ -42,7 +32,7 @@ export default function TopBar({ user, dateFilter, setDateFilter }: TopBarProps)
         <input 
           type="text" 
           className="topbar-search" 
-          placeholder="Search orders, menu items, customers..." 
+          placeholder="Search orders and menu items..."
         />
       </div>
 
@@ -83,7 +73,7 @@ export default function TopBar({ user, dateFilter, setDateFilter }: TopBarProps)
 
         {/* User Badge Info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span className={`badge ${getRoleBadgeClass(user.roles)}`}>
+          <span className="badge badge-owner">
             {formattedRole}
           </span>
           <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>

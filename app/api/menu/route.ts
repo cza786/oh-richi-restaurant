@@ -1,158 +1,189 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { requireRole } from '@/lib/auth';
+import { productSchema, validateBody } from '@/lib/schemas';
 
-// GET all menu items (optional filter by restaurant slug or restaurantId)
+const productInclude = {
+  category: true,
+  restaurant: { select: { id: true, name: true, slug: true } },
+  images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }] },
+  options: { orderBy: { sortOrder: 'asc' as const }, include: { items: { where: { isActive: true }, orderBy: { sortOrder: 'asc' as const } } } },
+};
+
+function serializeProduct(product: any) {
+  return {
+    ...product,
+    basePrice: Number(product.basePrice),
+    options: product.options?.map((option: any) => ({
+      ...option,
+      items: option.items.map((item: any) => ({ ...item, priceDelta: Number(item.priceDelta) })),
+    })) || [],
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const slug = searchParams.get('slug');
+    const id = searchParams.get('id');
     const restaurantId = searchParams.get('restaurantId');
-
-    const whereClause: any = { isActive: true };
-
-    if (restaurantId) {
-      whereClause.restaurantId = restaurantId;
-    } else if (slug) {
-      const restaurant = await db.restaurant.findUnique({
-        where: { slug: slug.toLowerCase() },
-      });
-      if (restaurant) {
-        whereClause.restaurantId = restaurant.id;
-      }
+    const slug = searchParams.get('slug');
+    let resolvedRestaurantId = restaurantId || undefined;
+    if (!resolvedRestaurantId && slug) {
+      const restaurant = await db.restaurant.findUnique({ where: { slug: slug.toLowerCase() }, select: { id: true } });
+      resolvedRestaurantId = restaurant?.id;
+      if (!resolvedRestaurantId) return NextResponse.json(id ? null : []);
     }
 
-    const items = await db.menuItem.findMany({
-      where: whereClause,
-      include: {
-        category: true,
-      },
-      orderBy: {
-        name: 'asc',
-      },
+    if (id) {
+      const product = await db.menuItem.findFirst({
+        where: { id, isActive: true, restaurant: { isActive: true }, ...(resolvedRestaurantId ? { restaurantId: resolvedRestaurantId } : {}) },
+        include: productInclude,
+      });
+      return product ? NextResponse.json(serializeProduct(product)) : NextResponse.json({ error: 'Product not found.' }, { status: 404 });
+    }
+
+    const products = await db.menuItem.findMany({
+      where: { isActive: true, restaurant: { isActive: true }, ...(resolvedRestaurantId ? { restaurantId: resolvedRestaurantId } : {}) },
+      include: productInclude,
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
-
-    // Format Decimal values to numbers for simple frontend integration
-    const formattedItems = items.map(item => ({
-      ...item,
-      basePrice: Number(item.basePrice),
-    }));
-
-    return NextResponse.json(formattedItems);
-  } catch (error: any) {
-    console.error('Fetch menu items error:', error);
+    return NextResponse.json(products.map(serializeProduct));
+  } catch (error) {
+    console.error('Fetch menu error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
 
-// POST create menu item
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, categoryName, basePrice, description, imageUrl } = body;
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
+    if (authResult instanceof NextResponse) return authResult;
+    const validation = validateBody(productSchema, await request.json());
+    if (validation instanceof NextResponse) return validation;
+    const input = validation.data;
 
-    if (!name || !basePrice) {
-      return NextResponse.json({ error: 'Name and base price are required.' }, { status: 400 });
-    }
+    const category = await db.menuCategory.findFirst({ where: { id: input.categoryId, restaurantId: input.restaurantId, isActive: true } });
+    if (!category) return NextResponse.json({ error: 'Category does not belong to this restaurant.' }, { status: 400 });
 
-    // Resolve or find target category
-    const catName = categoryName || 'Burgers';
-    let category = await db.menuCategory.findFirst({
-      where: { name: catName },
-    });
-
-    // Create category if none exists to avoid DB constraints violation
-    if (!category) {
-      // Find a location to bind the category to
-      const location = await db.restaurantLocation.findFirst();
-      if (!location) {
-        return NextResponse.json({ error: 'No restaurant locations exist to bind the menu item.' }, { status: 400 });
-      }
-
-      category = await db.menuCategory.create({
-        data: {
-          name: catName,
-          restaurantId: location.restaurantId,
-          locationId: location.id,
-          isActive: true,
-        },
-      });
-    }
-
-    const newItem = await db.menuItem.create({
+    const product = await db.menuItem.create({
       data: {
-        name,
-        restaurantId: category.restaurantId,
-        categoryId: category.id,
-        basePrice: Number(basePrice),
-        description: description || '',
-        imageUrl: imageUrl || null,
-        isAvailable: true,
-        isActive: true,
+        restaurantId: input.restaurantId,
+        categoryId: input.categoryId,
+        name: input.name,
+        description: input.description || null,
+        imageUrl: input.imageUrl || input.images.find((image) => image.isPrimary)?.imageUrl || input.images[0]?.imageUrl || null,
+        basePrice: input.basePrice,
+        sortOrder: input.sortOrder,
+        isAvailable: input.isAvailable,
+        isActive: input.isActive,
+        images: { create: input.images.map(({ id: _id, ...image }) => image) },
+        options: {
+          create: input.options.map(({ id: _id, items, ...option }) => ({
+            ...option,
+            items: { create: items.map(({ id: _itemId, ...item }) => item) },
+          })),
+        },
       },
+      include: productInclude,
     });
-
-    return NextResponse.json({
-      ...newItem,
-      basePrice: Number(newItem.basePrice),
-    });
-  } catch (error: any) {
+    return NextResponse.json(serializeProduct(product), { status: 201 });
+  } catch (error) {
     console.error('Create menu item error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to create product.' }, { status: 500 });
   }
 }
 
-// PUT edit menu item
 export async function PUT(request: Request) {
   try {
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
+    if (authResult instanceof NextResponse) return authResult;
     const body = await request.json();
-    const { id, name, basePrice, description, imageUrl, isAvailable } = body;
+    if (!body.id) return NextResponse.json({ error: 'Product ID is required.' }, { status: 400 });
 
-    if (!id) {
-      return NextResponse.json({ error: 'Menu item ID is required.' }, { status: 400 });
+    const existing = await db.menuItem.findUnique({ where: { id: body.id }, include: { options: { include: { items: true } }, images: true } });
+    if (!existing) return NextResponse.json({ error: 'Product not found.' }, { status: 404 });
+
+    const restaurantId = body.restaurantId ?? existing.restaurantId;
+    const categoryId = body.categoryId ?? existing.categoryId;
+    const category = await db.menuCategory.findFirst({ where: { id: categoryId, restaurantId } });
+    if (!category) return NextResponse.json({ error: 'Category does not belong to this restaurant.' }, { status: 400 });
+    const existingImageIds = new Set(existing.images.map((image) => image.id));
+    if (Array.isArray(body.images) && body.images.some((image: any) => image.id && !existingImageIds.has(image.id))) {
+      return NextResponse.json({ error: 'An image does not belong to this product.' }, { status: 400 });
+    }
+    const existingOptions = new Map(existing.options.map((option) => [option.id, option]));
+    if (Array.isArray(body.options)) {
+      for (const option of body.options) {
+        if (option.id && !existingOptions.has(option.id)) return NextResponse.json({ error: 'An option does not belong to this product.' }, { status: 400 });
+        const currentOption = option.id ? existingOptions.get(option.id) : undefined;
+        const existingItemIds = new Set((currentOption?.items || []).map((item) => item.id));
+        if ((option.items || []).some((item: any) => item.id && !existingItemIds.has(item.id))) {
+          return NextResponse.json({ error: 'An option item does not belong to this product option.' }, { status: 400 });
+        }
+      }
     }
 
-    // Construct dynamic update fields
-    const dataToUpdate: any = {};
-    if (name !== undefined) dataToUpdate.name = name;
-    if (basePrice !== undefined) dataToUpdate.basePrice = Number(basePrice);
-    if (description !== undefined) dataToUpdate.description = description;
-    if (imageUrl !== undefined) dataToUpdate.imageUrl = imageUrl || null;
-    if (isAvailable !== undefined) dataToUpdate.isAvailable = Boolean(isAvailable);
+    await db.$transaction(async (tx) => {
+      await tx.menuItem.update({
+        where: { id: existing.id },
+        data: {
+          restaurantId,
+          categoryId,
+          ...(body.name !== undefined ? { name: String(body.name).trim() } : {}),
+          ...(body.description !== undefined ? { description: body.description?.trim() || null } : {}),
+          ...(body.imageUrl !== undefined ? { imageUrl: body.imageUrl?.trim() || null } : {}),
+          ...(body.basePrice !== undefined ? { basePrice: Number(body.basePrice) } : {}),
+          ...(body.sortOrder !== undefined ? { sortOrder: Number(body.sortOrder) } : {}),
+          ...(body.isAvailable !== undefined ? { isAvailable: Boolean(body.isAvailable) } : {}),
+          ...(body.isActive !== undefined ? { isActive: Boolean(body.isActive) } : {}),
+        },
+      });
 
-    const updatedItem = await db.menuItem.update({
-      where: { id },
-      data: dataToUpdate,
+      if (Array.isArray(body.images)) {
+        const retainedIds = body.images.map((image: any) => image.id).filter(Boolean);
+        await tx.productImage.deleteMany({ where: { productId: existing.id, ...(retainedIds.length ? { id: { notIn: retainedIds } } : {}) } });
+        for (const image of body.images) {
+          const data = { imageUrl: String(image.imageUrl).trim(), isPrimary: Boolean(image.isPrimary), sortOrder: Number(image.sortOrder || 0) };
+          if (image.id) await tx.productImage.update({ where: { id: image.id }, data });
+          else await tx.productImage.create({ data: { productId: existing.id, ...data } });
+        }
+      }
+
+      if (Array.isArray(body.options)) {
+        for (const option of body.options) {
+          const optionData = { name: String(option.name).trim(), isRequired: Boolean(option.isRequired), sortOrder: Number(option.sortOrder || 0) };
+          const savedOption = option.id
+            ? await tx.productOption.update({ where: { id: option.id }, data: optionData })
+            : await tx.productOption.create({ data: { productId: existing.id, ...optionData } });
+          const retainedItemIds = (option.items || []).map((item: any) => item.id).filter(Boolean);
+          await tx.optionItem.updateMany({ where: { optionId: savedOption.id, ...(retainedItemIds.length ? { id: { notIn: retainedItemIds } } : {}) }, data: { isActive: false } });
+          for (const item of option.items || []) {
+            const itemData = { name: String(item.name).trim(), priceDelta: Number(item.priceDelta || 0), isActive: item.isActive !== false, sortOrder: Number(item.sortOrder || 0) };
+            if (item.id) await tx.optionItem.update({ where: { id: item.id }, data: itemData });
+            else await tx.optionItem.create({ data: { optionId: savedOption.id, ...itemData } });
+          }
+        }
+      }
     });
 
-    return NextResponse.json({
-      ...updatedItem,
-      basePrice: Number(updatedItem.basePrice),
-    });
-  } catch (error: any) {
+    const updated = await db.menuItem.findUnique({ where: { id: existing.id }, include: productInclude });
+    return NextResponse.json(serializeProduct(updated));
+  } catch (error) {
     console.error('Update menu item error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to update product.' }, { status: 500 });
   }
 }
 
-// DELETE menu item (Soft delete by setting isActive to false)
 export async function DELETE(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'Menu item ID is required.' }, { status: 400 });
-    }
-
-    // Soft delete to preserve historical order items analytics
-    await db.menuItem.update({
-      where: { id },
-      data: { isActive: false },
-    });
-
-    return NextResponse.json({ success: true, message: 'Menu item successfully deleted.' });
-  } catch (error: any) {
-    console.error('Delete menu item error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
+    if (authResult instanceof NextResponse) return authResult;
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Product ID is required.' }, { status: 400 });
+    await db.menuItem.update({ where: { id }, data: { isActive: false, isAvailable: false } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Archive menu item error:', error);
+    return NextResponse.json({ error: 'Unable to archive product.' }, { status: 500 });
   }
 }

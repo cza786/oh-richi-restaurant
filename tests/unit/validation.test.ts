@@ -1,10 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   loginSchema,
-  signupSchema,
   createOrderSchema,
   updateOrderStatusSchema,
-  createCouponSchema,
   validateBody,
 } from '@/lib/schemas';
 import { NextResponse } from 'next/server';
@@ -38,16 +36,18 @@ describe('Zod Request Body Schema Validation (lib/schemas.ts)', () => {
   describe('createOrderSchema', () => {
     it('should validate correct order checkout payload', () => {
       const validOrder = {
-        customerName: 'Alice Smith',
-        orderType: 'DELIVERY',
-        subtotal: 25.0,
-        totalAmount: 25.0,
+        restaurantId: 'restaurant-1',
+        customer: {
+          name: 'Alice Smith',
+          phone: '+1 555 0100',
+          address: '10 Main Street',
+        },
+        paymentMethod: 'cod',
         orderItems: [
           {
-            itemId: 'item-1',
+            productId: 'item-1',
             quantity: 2,
-            unitPrice: 12.5,
-            subtotal: 25.0,
+            optionItemIds: [],
           },
         ],
       };
@@ -55,17 +55,16 @@ describe('Zod Request Body Schema Validation (lib/schemas.ts)', () => {
       const result = validateBody(createOrderSchema, validOrder);
       expect(result).not.toBeInstanceOf(NextResponse);
       if (!(result instanceof NextResponse)) {
-        expect(result.data.customerName).toBe('Alice Smith');
-        expect(result.data.orderType).toBe('DELIVERY');
+        expect(result.data.customer.name).toBe('Alice Smith');
+        expect(result.data.paymentMethod).toBe('cod');
       }
     });
 
     it('should reject order payload missing customerName or with invalid orderType', () => {
       const invalidOrder = {
-        customerName: '',
-        orderType: 'INVALID_TYPE',
-        subtotal: 25.0,
-        totalAmount: 25.0,
+        restaurantId: 'restaurant-1',
+        customer: { name: '', phone: '', address: '' },
+        paymentMethod: 'invalid',
         orderItems: [],
       };
 
@@ -80,7 +79,7 @@ describe('Zod Request Body Schema Validation (lib/schemas.ts)', () => {
     it('should validate status update payload', () => {
       const result = validateBody(updateOrderStatusSchema, {
         id: 'order-123',
-        status: 'READY',
+        status: 'ready',
       });
 
       expect(result).not.toBeInstanceOf(NextResponse);
@@ -88,7 +87,7 @@ describe('Zod Request Body Schema Validation (lib/schemas.ts)', () => {
 
     it('should reject status update payload missing order id', () => {
       const result = validateBody(updateOrderStatusSchema, {
-        status: 'READY',
+        status: 'ready',
       });
 
       expect(result).toBeInstanceOf(NextResponse);

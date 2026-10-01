@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CustomerLayout from '../components/CustomerLayout';
@@ -13,25 +13,21 @@ export default function CheckoutPage() {
     restaurantId,
     cartSubtotal,
     deliveryFee,
-    orderType,
-    setOrderType,
     deliveryAddress,
     setDeliveryAddress,
-    selectedBranch,
-    appliedCoupon,
-    appliedRedemption,
     clearCart,
   } = useCart();
 
   const [loading, setLoading] = useState(false);
 
-  // Form Fields matching Screen 5
-  const [fullName, setFullName] = useState('John Doe');
-  const [phone, setPhone] = useState('+1 234 567 8900');
-  const [address, setAddressState] = useState(deliveryAddress || '123 Main Street, New York, NY 10001');
-  const [city, setCity] = useState('New York');
-  const [postalCode, setPostalCode] = useState('10001');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [address, setAddressState] = useState(deliveryAddress || '');
+  const [city, setCity] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
 
   // Keep address synchronized with context
   const setAddress = (val: string) => {
@@ -39,16 +35,21 @@ export default function CheckoutPage() {
     setDeliveryAddress(val);
   };
 
-  const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : (appliedRedemption ? appliedRedemption.reward.discountAmount : 0);
-  const totalAmount = Math.max(0, cartSubtotal + deliveryFee - discountAmount);
+  const totalAmount = cartSubtotal + deliveryFee;
 
   const handlePlaceOrder = async () => {
+    const resolvedRestaurantId = restaurantId || cart[0]?.restaurantId;
+    if (cart.length === 0 || !resolvedRestaurantId) {
+      alert('Your cart is empty.');
+      return;
+    }
+
     if (!fullName || !phone) {
       alert('Please fill in your name and phone number.');
       return;
     }
 
-    if (orderType === 'DELIVERY' && !address) {
+    if (!address) {
       alert('Please provide a delivery address.');
       return;
     }
@@ -56,27 +57,22 @@ export default function CheckoutPage() {
     setLoading(true);
 
     const orderItemsPayload = cart.map((item) => ({
-      itemId: item.itemId,
+      productId: item.itemId,
       quantity: item.quantity,
-      unitPrice: item.basePrice,
-      subtotal: item.basePrice * item.quantity,
-      notes: item.notes || null,
+      optionItemIds: item.selectedOptions.map((option) => option.optionItemId),
     }));
 
     try {
       const orderBody = {
-        restaurantId: restaurantId || cart[0]?.restaurantId || 'd3b07384-d113-4e4e-862d-0b32525164d1',
-        customerName: fullName,
-        customerPhone: phone,
-        customerEmail: 'john@example.com',
-        orderType,
-        subtotal: cartSubtotal,
-        taxAmount: 0.00,
-        deliveryFee,
-        discountAmount,
-        totalAmount,
-        deliveryAddress: `${address}, ${city} ${postalCode}`,
-        specialInstructions: orderNotes || null,
+        restaurantId: resolvedRestaurantId,
+        customer: {
+          name: fullName,
+          phone,
+          whatsapp: whatsapp || null,
+          address: [address, city, postalCode].filter(Boolean).join(', '),
+        },
+        paymentMethod,
+        customerNote: orderNotes || null,
         orderItems: orderItemsPayload,
       };
 
@@ -93,7 +89,7 @@ export default function CheckoutPage() {
 
       const data = await response.json();
       clearCart();
-      router.push(`/order-success?orderId=${data.shortId || data.id}`);
+      router.push(`/order-success?orderId=${encodeURIComponent(data.orderNumber || data.shortId)}&total=${encodeURIComponent(data.totalAmount)}`);
     } catch (err: any) {
       alert(err.message || 'An error occurred while placing your order.');
     } finally {
@@ -152,6 +148,7 @@ export default function CheckoutPage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  required
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -170,6 +167,7 @@ export default function CheckoutPage() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  required
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -184,11 +182,17 @@ export default function CheckoutPage() {
             </div>
 
             <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#64748b', marginBottom: '6px' }}>WhatsApp (Optional)</label>
+              <input className="form-input" type="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#64748b', marginBottom: '6px' }}>📍 Delivery Address</label>
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
+                required
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -257,6 +261,15 @@ export default function CheckoutPage() {
                 }}
               />
             </div>
+
+            <div className="form-group" style={{ marginTop: '16px' }}>
+              <label className="form-label">Payment method</label>
+              <select className="form-input" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as 'cod' | 'online')}>
+                <option value="cod">Cash on delivery</option>
+                <option value="online">Online payment</option>
+              </select>
+              {paymentMethod === 'online' && <small style={{ color: '#64748b' }}>Payment remains pending until a payment provider confirms it.</small>}
+            </div>
           </section>
 
           {/* ORDER SUMMARY CARD (MATCHING SCREEN 5) */}
@@ -292,39 +305,30 @@ export default function CheckoutPage() {
                     <div style={{ flex: 1 }}>
                       <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 900, color: '#0f172a' }}>{item.name}</h4>
                       <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b' }}>
-                        {item.quantity} x ${Number(item.basePrice).toFixed(2)}
+                        {item.quantity} x ${Number(item.unitPrice).toFixed(2)}
                       </span>
                     </div>
                     <strong style={{ fontSize: '1rem', fontWeight: 900, color: '#0f172a' }}>
-                      ${(Number(item.basePrice) * item.quantity).toFixed(2)}
+                      ${(Number(item.unitPrice) * item.quantity).toFixed(2)}
                     </strong>
                   </div>
                 ))
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <img src="/burger_hero.png" alt="Classic Burger" style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '14px' }} />
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 900, color: '#0f172a' }}>Classic Burger</h4>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b' }}>1 x $7.99</span>
-                  </div>
-                  <strong style={{ fontSize: '1rem', fontWeight: 900, color: '#0f172a' }}>$7.99</strong>
-                </div>
-              )}
+              ) : <p style={{ margin: 0, color: '#64748b' }}>Your cart is empty.</p>}
             </div>
 
             {/* Calculations */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#64748b', fontWeight: 700 }}>
                 <span>Subtotal</span>
-                <span>${(cartSubtotal || 10.98).toFixed(2)}</span>
+                <span>${cartSubtotal.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#64748b', fontWeight: 700 }}>
                 <span>Delivery Fee</span>
-                <span>${(deliveryFee || 2.00).toFixed(2)}</span>
+                <span>${deliveryFee.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: '#0f172a', fontWeight: 900, paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
                 <span>Total</span>
-                <span style={{ color: '#F95700' }}>${(totalAmount || 12.98).toFixed(2)}</span>
+                <span style={{ color: '#F95700' }}>${totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </section>
@@ -349,7 +353,7 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={handlePlaceOrder}
-              disabled={loading}
+              disabled={loading || cart.length === 0}
               style={{
                 width: '100%',
                 backgroundColor: '#F95700',
@@ -369,7 +373,7 @@ export default function CheckoutPage() {
             >
               <span>🛍️ Place Order</span>
               <span>•</span>
-              <span>${(totalAmount || 12.98).toFixed(2)}</span>
+              <span>${totalAmount.toFixed(2)}</span>
             </button>
           </div>
         </div>

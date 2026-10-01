@@ -1,82 +1,83 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { requireRole } from '@/lib/auth';
 
-// GET general store profile configurations
-export async function GET() {
+function serializeRestaurant(restaurant: any) {
+  return {
+    ...restaurant,
+    deliveryRadiusKm: Number(restaurant.deliveryRadiusKm),
+    minimumOrderAmount: Number(restaurant.minimumOrderAmount),
+    deliveryFee: Number(restaurant.deliveryFee),
+  };
+}
+
+export async function GET(request: Request) {
   try {
-    const restaurant = await db.restaurant.findFirst({
-      include: {
-        locations: true,
-      },
-    });
+    const { searchParams } = new URL(request.url);
+    const restaurantId = searchParams.get('restaurantId');
+    const restaurant = restaurantId
+      ? await db.restaurant.findUnique({ where: { id: restaurantId } })
+      : await db.restaurant.findFirst({ orderBy: { createdAt: 'asc' } });
+    if (!restaurant) return NextResponse.json({ error: 'Restaurant not found.' }, { status: 404 });
 
-    if (!restaurant) {
-      return NextResponse.json({ error: 'Restaurant entity not seeded.' }, { status: 404 });
+    let platformSettings: Array<{ key: string; value: string; description: string | null }> | undefined;
+    if (searchParams.get('includeGeneric') === 'true') {
+      const authResult = await requireRole(request, ['SUPER_ADMIN']);
+      if (authResult instanceof NextResponse) return authResult;
+      platformSettings = await db.setting.findMany({ select: { key: true, value: true, description: true }, orderBy: { key: 'asc' } });
     }
-
-    const location = restaurant.locations[0] || null;
-
-    // Send a structured configuration response
-    return NextResponse.json({
-      id: restaurant.id,
-      name: restaurant.name,
-      logoUrl: restaurant.logoUrl || '',
-      website: restaurant.website || '',
-      phone: location?.phone || '',
-      email: location?.email || '',
-      address: location ? `${location.addressLine1}, ${location.city}, ${location.country}` : '',
-      currency: 'EUR',
-      vat: 10.0,
-      autoAccept: true,
-      locationId: location?.id || '',
-    });
-  } catch (error: any) {
+    return NextResponse.json({ ...serializeRestaurant(restaurant), ...(platformSettings ? { platformSettings } : {}) });
+  } catch (error) {
     console.error('Fetch settings error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
 
-// PUT modify settings metadata profiles
 export async function PUT(request: Request) {
   try {
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
+    if (authResult instanceof NextResponse) return authResult;
     const body = await request.json();
-    const { id, name, logoUrl, phone, email, address, locationId } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: 'Restaurant ID is required.' }, { status: 400 });
+    if (!body.id) return NextResponse.json({ error: 'Restaurant ID is required.' }, { status: 400 });
+    if (!body.name?.trim() || !body.address?.trim() || !body.phone?.trim()) {
+      return NextResponse.json({ error: 'Name, address and phone are required.' }, { status: 400 });
     }
-
-    // Update restaurant info
-    const updatedRestaurant = await db.restaurant.update({
-      where: { id },
-      data: {
-        name: name,
-        ...(logoUrl !== undefined && { logoUrl }),
-      },
-    });
-
-    // Update location details if linked
-    if (locationId) {
-      const parts = (address || '').split(',');
-      const addressLine1 = parts[0]?.trim() || '123 Via Roma';
-      const city = parts[1]?.trim() || 'Rome';
-      const country = parts[2]?.trim() || 'Italy';
-
-      await db.restaurantLocation.update({
-        where: { id: locationId },
+    const restaurant = await db.$transaction(async (tx) => {
+      const updated = await tx.restaurant.update({
+        where: { id: body.id },
         data: {
-          phone: phone,
-          email: email,
-          addressLine1,
-          city,
-          country,
+          name: body.name.trim(),
+          description: body.description?.trim() || null,
+          logoUrl: body.logoUrl?.trim() || null,
+          coverImageUrl: body.coverImageUrl?.trim() || null,
+          address: body.address.trim(),
+          phone: body.phone.trim(),
+          whatsapp: body.whatsapp?.trim() || null,
+          isActive: body.isActive !== false,
+          isOpen: body.isOpen !== false,
+          openingTime: body.openingTime || null,
+          closingTime: body.closingTime || null,
+          deliveryRadiusKm: Number(body.deliveryRadiusKm || 0),
+          minimumOrderAmount: Number(body.minimumOrderAmount || 0),
+          deliveryFee: Number(body.deliveryFee || 0),
         },
       });
-    }
-
-    return NextResponse.json({ success: true, restaurant: updatedRestaurant });
-  } catch (error: any) {
+      if (Array.isArray(body.platformSettings)) {
+        for (const setting of body.platformSettings) {
+          const key = String(setting.key || '').trim();
+          if (!key) continue;
+          await tx.setting.upsert({
+            where: { key },
+            update: { value: String(setting.value ?? ''), description: setting.description?.trim() || null },
+            create: { key, value: String(setting.value ?? ''), description: setting.description?.trim() || null },
+          });
+        }
+      }
+      return updated;
+    });
+    return NextResponse.json(serializeRestaurant(restaurant));
+  } catch (error) {
     console.error('Update settings error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to update settings.' }, { status: 500 });
   }
 }

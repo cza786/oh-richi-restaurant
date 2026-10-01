@@ -1,128 +1,73 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { requireRole } from '@/lib/auth';
+import { categorySchema, validateBody } from '@/lib/schemas';
 
-// GET categories for a restaurant (or all)
 export async function GET(request: Request) {
   try {
-    const authResult = await requireRole(request, ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER']);
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
     if (authResult instanceof NextResponse) return authResult;
-
-    const { searchParams } = new URL(request.url);
-    const restaurantId = searchParams.get('restaurantId');
-
-    const where: any = {};
-    if (restaurantId) {
-      where.restaurantId = restaurantId;
-    }
-
+    const restaurantId = new URL(request.url).searchParams.get('restaurantId');
     const categories = await db.menuCategory.findMany({
-      where,
-      include: {
-        restaurant: { select: { id: true, name: true, slug: true } },
-        _count: { select: { menuItems: true } },
-      },
-      orderBy: { sortOrder: 'asc' },
+      where: restaurantId ? { restaurantId } : undefined,
+      include: { restaurant: { select: { id: true, name: true, slug: true } }, _count: { select: { products: true } } },
+      orderBy: [{ restaurantId: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
     });
-
     return NextResponse.json(categories);
-  } catch (error: any) {
-    console.error('Admin fetch categories error:', error);
+  } catch (error) {
+    console.error('Fetch categories error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
 
-// POST create category
 export async function POST(request: Request) {
   try {
-    const authResult = await requireRole(request, ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER']);
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
     if (authResult instanceof NextResponse) return authResult;
-
-    const body = await request.json();
-    const { restaurantId, name, description, sortOrder } = body;
-
-    if (!restaurantId || !name || !name.trim()) {
-      return NextResponse.json({ error: 'restaurantId and name are required.' }, { status: 400 });
-    }
-
-    // Get restaurant main location
-    const location = await db.restaurantLocation.findFirst({
-      where: { restaurantId },
-    });
-
-    if (!location) {
-      return NextResponse.json({ error: 'Restaurant location not found.' }, { status: 400 });
-    }
-
-    const category = await db.menuCategory.create({
-      data: {
-        restaurantId,
-        locationId: location.id,
-        name: name.trim(),
-        description: description?.trim() || null,
-        sortOrder: sortOrder ? Number(sortOrder) : 0,
-        isActive: true,
-      },
-    });
-
-    return NextResponse.json(category);
-  } catch (error: any) {
-    console.error('Admin create category error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    const validation = validateBody(categorySchema, await request.json());
+    if (validation instanceof NextResponse) return validation;
+    const restaurant = await db.restaurant.findUnique({ where: { id: validation.data.restaurantId }, select: { id: true } });
+    if (!restaurant) return NextResponse.json({ error: 'Restaurant not found.' }, { status: 404 });
+    const category = await db.menuCategory.create({ data: { ...validation.data, imageUrl: validation.data.imageUrl || null, isActive: validation.data.isActive ?? true } });
+    return NextResponse.json(category, { status: 201 });
+  } catch (error) {
+    console.error('Create category error:', error);
+    return NextResponse.json({ error: 'Unable to create category. Its name must be unique within the restaurant.' }, { status: 400 });
   }
 }
 
-// PUT update category
 export async function PUT(request: Request) {
   try {
-    const authResult = await requireRole(request, ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER']);
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
     if (authResult instanceof NextResponse) return authResult;
-
     const body = await request.json();
-    const { id, name, description, sortOrder, isActive } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: 'Category ID is required.' }, { status: 400 });
-    }
-
-    const updateData: any = {};
-    if (name !== undefined) updateData.name = name.trim();
-    if (description !== undefined) updateData.description = description ? description.trim() : null;
-    if (sortOrder !== undefined) updateData.sortOrder = Number(sortOrder);
-    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
-
-    const updated = await db.menuCategory.update({
-      where: { id },
-      data: updateData,
+    if (!body.id) return NextResponse.json({ error: 'Category ID is required.' }, { status: 400 });
+    const category = await db.menuCategory.update({
+      where: { id: body.id },
+      data: {
+        ...(body.name !== undefined ? { name: String(body.name).trim() } : {}),
+        ...(body.imageUrl !== undefined ? { imageUrl: body.imageUrl?.trim() || null } : {}),
+        ...(body.sortOrder !== undefined ? { sortOrder: Number(body.sortOrder) } : {}),
+        ...(body.isActive !== undefined ? { isActive: Boolean(body.isActive) } : {}),
+      },
     });
-
-    return NextResponse.json(updated);
-  } catch (error: any) {
-    console.error('Admin update category error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    return NextResponse.json(category);
+  } catch (error) {
+    console.error('Update category error:', error);
+    return NextResponse.json({ error: 'Unable to update category.' }, { status: 400 });
   }
 }
 
-// DELETE category
 export async function DELETE(request: Request) {
   try {
-    const authResult = await requireRole(request, ['SUPER_ADMIN', 'ADMIN', 'OWNER', 'MANAGER']);
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
     if (authResult instanceof NextResponse) return authResult;
-
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'Category ID is required.' }, { status: 400 });
-    }
-
-    await db.menuCategory.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ success: true, message: 'Category deleted successfully.' });
-  } catch (error: any) {
-    console.error('Admin delete category error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Category ID is required.' }, { status: 400 });
+    await db.menuCategory.update({ where: { id }, data: { isActive: false } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Archive category error:', error);
+    return NextResponse.json({ error: 'Unable to archive category.' }, { status: 500 });
   }
 }

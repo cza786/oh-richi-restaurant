@@ -1,31 +1,29 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { requireRole } from '@/lib/auth';
 
-// GET all payments transaction ledger (Pure read query)
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
+    if (authResult instanceof NextResponse) return authResult;
+    const restaurantId = new URL(request.url).searchParams.get('restaurantId');
     const payments = await db.payment.findMany({
-      include: {
-        order: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: restaurantId ? { order: { restaurantId } } : undefined,
+      include: { order: { include: { customer: { select: { name: true } }, restaurant: { select: { name: true } } } } },
+      orderBy: { createdAt: 'desc' },
     });
-
-    // Format Decimal values for frontend
-    const formatted = payments.map(p => ({
-      id: p.id,
-      orderId: p.order?.shortId || 'OR-MOCK',
-      method: p.paymentMethod,
-      amount: Number(p.amount),
-      status: p.status === 'SUCCESSFUL' ? 'paid' : 'pending',
-      paidBy: p.order?.customerName || 'Walk-in Customer',
-      time: new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }));
-
-    return NextResponse.json(formatted);
-  } catch (error: any) {
+    return NextResponse.json(payments.map((payment) => ({
+      id: payment.id,
+      orderId: payment.order.orderNumber,
+      method: payment.method,
+      amount: Number(payment.amount),
+      status: payment.status,
+      transactionId: payment.transactionId,
+      paidBy: payment.order.customer.name,
+      restaurant: payment.order.restaurant.name,
+      time: payment.createdAt,
+    })));
+  } catch (error) {
     console.error('Fetch payments error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

@@ -13,11 +13,7 @@ interface Restaurant {
   name: string;
   description: string | null;
   logoUrl: string | null;
-  website: string | null;
-  locations?: Array<{
-    city: string;
-    addressLine1: string;
-  }>;
+  address: string;
   _count?: {
     menuItems: number;
   };
@@ -30,6 +26,7 @@ interface MenuItem {
   imageUrl: string | null;
   basePrice: number;
   isAvailable?: boolean;
+  options?: Array<{ id: string; isRequired: boolean }>;
   category?: { name: string };
   restaurant?: {
     id: string;
@@ -38,99 +35,6 @@ interface MenuItem {
     logoUrl: string | null;
   };
 }
-
-const FALLBACK_RESTAURANTS: Restaurant[] = [
-  {
-    id: 'd3b07384-d113-4e4e-862d-0b32525164d1',
-    slug: 'oh-richi',
-    name: 'Oh Richi',
-    description: 'Authentic Italian & Specialty Gourmet Burgers and Pizzas',
-    logoUrl: '/burger_hero.png',
-    website: 'https://ohrichi.com',
-    locations: [{ city: 'Rome', addressLine1: '123 Via Roma' }],
-    _count: { menuItems: 24 },
-  },
-  {
-    id: 'rest-bella-italia',
-    slug: 'bella-italia',
-    name: 'Bella Italia Trattoria',
-    description: 'Traditional Wood-fired Neapolitan Pizzas & Handmade Pasta',
-    logoUrl: '/burger_hero.png',
-    website: 'https://bellaitalia.com',
-    locations: [{ city: 'Naples', addressLine1: '45 Piazza Navona' }],
-    _count: { menuItems: 18 },
-  },
-  {
-    id: 'rest-tokyo-sushi',
-    slug: 'tokyo-sushi',
-    name: 'Tokyo Sushi & Ramen Express',
-    description: 'Fresh Sashimi, Specialty Rolls, and Authentic Tonkotsu Ramen',
-    logoUrl: '/burger_hero.png',
-    website: 'https://tokyosushi.com',
-    locations: [{ city: 'Milan', addressLine1: '88 Corso Como' }],
-    _count: { menuItems: 22 },
-  },
-  {
-    id: 'rest-smash-burger',
-    slug: 'smash-burger-express',
-    name: 'Smash Burger Express',
-    description: 'Double Crusted Smashed Beef Burgers & Loaded Truffle Fries',
-    logoUrl: '/burger_hero.png',
-    website: 'https://smashburgerexpress.com',
-    locations: [{ city: 'Florence', addressLine1: '12 Via Dante' }],
-    _count: { menuItems: 15 },
-  },
-];
-
-const FALLBACK_PRODUCTS: MenuItem[] = [
-  {
-    id: 'prod-oh-g',
-    name: "Oh'G Signature Burger",
-    description: 'Prime smashed beef, double cheddar, crispy bacon, Oh-G sauce',
-    imageUrl: '/burger_hero.png',
-    basePrice: 8.50,
-    category: { name: 'Burgers' },
-    restaurant: { id: 'd3b07384-d113-4e4e-862d-0b32525164d1', name: 'Oh Richi', slug: 'oh-richi', logoUrl: '/burger_hero.png' },
-  },
-  {
-    id: 'prod-classic-cheeeese',
-    name: 'Classic Cheeeese Burger',
-    description: 'Prime beef, melted American cheese, pickles, mustard, mayo',
-    imageUrl: '/burger_hero.png',
-    basePrice: 7.50,
-    category: { name: 'Burgers' },
-    restaurant: { id: 'd3b07384-d113-4e4e-862d-0b32525164d1', name: 'Oh Richi', slug: 'oh-richi', logoUrl: '/burger_hero.png' },
-  },
-  {
-    id: 'prod-bella-margherita',
-    name: 'Wood-fired Pizza Margherita',
-    description: 'San Marzano tomato sauce, fresh mozzarella di bufala, basil',
-    imageUrl: '/burger_hero.png',
-    basePrice: 11.00,
-    category: { name: 'Pizza' },
-    restaurant: { id: 'rest-bella-italia', name: 'Bella Italia Trattoria', slug: 'bella-italia', logoUrl: '/burger_hero.png' },
-  },
-  {
-    id: 'prod-dragon-roll',
-    name: 'Dragon Spicy Roll (8pcs)',
-    description: 'Tempura shrimp, avocado, spicy tuna, unagi glaze',
-    imageUrl: '/burger_hero.png',
-    basePrice: 14.50,
-    category: { name: 'Ramen' },
-    restaurant: { id: 'rest-tokyo-sushi', name: 'Tokyo Sushi & Ramen Express', slug: 'tokyo-sushi', logoUrl: '/burger_hero.png' },
-  },
-];
-
-const MARKETPLACE_CATEGORIES = [
-  { id: 'Food', name: 'Food', icon: '🍔', badge: 'Popular' },
-  { id: 'Grocery', name: 'Grocery', icon: '🛒', badge: 'Essential' },
-  { id: 'Pharmacy', name: 'Pharmacy', icon: '💊', badge: '24/7' },
-  { id: 'Fashion', name: 'Fashion', icon: '👕', badge: 'Style' },
-  { id: 'Electronics', name: 'Electronics', icon: '🎧', badge: 'Tech' },
-  { id: 'Beauty', name: 'Beauty', icon: '💄', badge: 'Glow' },
-  { id: 'Gifts', name: 'Gifts', icon: '🎁', badge: 'Special' },
-  { id: 'More', name: 'More', icon: '🎛️', badge: 'Explore' },
-];
 
 function SearchIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>;
@@ -153,12 +57,15 @@ export default function Door2DoorMarketplaceHomePage() {
   const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Food');
   const [activeTab, setActiveTab] = useState<'restaurants' | 'products'>('restaurants');
 
   const [toast, setToast] = useState('');
 
   const addPlainProductToCart = (item: MenuItem) => {
+    if (item.options?.length) {
+      router.push(`/menu/${item.id}`);
+      return;
+    }
     addToCart({
       restaurantId: item.restaurant?.id,
       itemId: item.id,
@@ -166,10 +73,7 @@ export default function Door2DoorMarketplaceHomePage() {
       imageUrl: item.imageUrl || null,
       basePrice: Number(item.basePrice),
       quantity: 1,
-      notes: '',
-      variation: null,
-      spiceLevel: null,
-      addons: [],
+      selectedOptions: [],
     });
     setToast(`Added ${item.name} to your cart!`);
   };
@@ -192,20 +96,23 @@ export default function Door2DoorMarketplaceHomePage() {
           }
         }
 
-        const res = await fetch('/api/restaurants');
-        if (!res.ok) throw new Error('Failed to fetch');
-        const data = await res.json();
-        if (mounted && Array.isArray(data) && data.length > 0) {
-          setRestaurants(data);
-          setProducts(FALLBACK_PRODUCTS);
-        } else if (mounted) {
-          setRestaurants(FALLBACK_RESTAURANTS);
-          setProducts(FALLBACK_PRODUCTS);
+        const [restaurantResponse, productResponse] = await Promise.all([
+          fetch('/api/restaurants'),
+          fetch('/api/menu'),
+        ]);
+        if (!restaurantResponse.ok || !productResponse.ok) throw new Error('Failed to fetch marketplace data');
+        const [restaurantData, productData] = await Promise.all([
+          restaurantResponse.json(),
+          productResponse.json(),
+        ]);
+        if (mounted) {
+          setRestaurants(Array.isArray(restaurantData) ? restaurantData : []);
+          setProducts(Array.isArray(productData) ? productData : []);
         }
       } catch {
         if (mounted) {
-          setRestaurants(FALLBACK_RESTAURANTS);
-          setProducts(FALLBACK_PRODUCTS);
+          setRestaurants([]);
+          setProducts([]);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -234,7 +141,7 @@ export default function Door2DoorMarketplaceHomePage() {
       const matchesSearch = !query
         || r.name.toLowerCase().includes(query)
         || r.description?.toLowerCase().includes(query)
-        || r.locations?.some((l) => l.city.toLowerCase().includes(query));
+        || r.address.toLowerCase().includes(query);
       return matchesSearch;
     });
   }, [restaurants, searchQuery]);
@@ -406,129 +313,6 @@ export default function Door2DoorMarketplaceHomePage() {
           </div>
         </section>
 
-        {/* 8 CATEGORIES GRID */}
-        <section style={{ marginBottom: '36px' }}>
-          <div className="d2d-category-grid">
-            {MARKETPLACE_CATEGORIES.map((cat) => (
-              <button
-                type="button"
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                style={{
-                  backgroundColor: selectedCategory === cat.id ? '#fff3eb' : '#ffffff',
-                  border: selectedCategory === cat.id ? '2px solid #F95700' : '1px solid #f1f5f9',
-                  borderRadius: '22px',
-                  padding: '18px 12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.03)',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '50%',
-                    backgroundColor: selectedCategory === cat.id ? '#F95700' : '#fff7ed',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.75rem',
-                    boxShadow: '0 4px 12px rgba(249, 87, 0, 0.1)',
-                  }}
-                >
-                  {cat.icon}
-                </div>
-                <span
-                  style={{
-                    fontSize: '0.92rem',
-                    fontWeight: 800,
-                    color: selectedCategory === cat.id ? '#F95700' : '#1e293b',
-                  }}
-                >
-                  {cat.name}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* SPECIAL OFFERS PROMO BANNER */}
-        <section style={{ marginBottom: '40px' }}>
-          <div
-            style={{
-              position: 'relative',
-              borderRadius: '28px',
-              background: 'linear-gradient(135deg, #1c0a00 0%, #3a1500 50%, #992900 100%)',
-              padding: '32px 36px',
-              color: '#ffffff',
-              overflow: 'hidden',
-              boxShadow: '0 20px 45px rgba(249, 87, 0, 0.25)',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '24px',
-              alignItems: 'center',
-            }}
-          >
-            <div style={{ zIndex: 2 }}>
-              <span
-                style={{
-                  textTransform: 'uppercase',
-                  fontSize: '0.78rem',
-                  fontWeight: 900,
-                  letterSpacing: '1.5px',
-                  color: '#ffd0b5',
-                }}
-              >
-                SPECIAL OFFERS
-              </span>
-              <h2 style={{ fontSize: '2.6rem', fontWeight: 900, margin: '8px 0 10px 0', lineHeight: '1.1' }}>
-                Up to <span style={{ color: '#ff8442' }}>50% Off</span>
-              </h2>
-              <p style={{ color: '#ffedd5', fontSize: '1.02rem', margin: '0 0 24px 0', fontWeight: 500 }}>
-                Your Favorite Items, Delivered Faster!
-              </p>
-              <button
-                type="button"
-                onClick={() => setActiveTab('products')}
-                style={{
-                  backgroundColor: '#ffffff',
-                  color: '#F95700',
-                  border: 'none',
-                  borderRadius: '30px',
-                  padding: '12px 28px',
-                  fontWeight: 900,
-                  fontSize: '0.98rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
-                  transition: 'transform 0.2s ease',
-                }}
-              >
-                Shop Now ›
-              </button>
-            </div>
-
-            <div style={{ position: 'relative', textAlign: 'center', zIndex: 1 }}>
-              <img
-                src="/door2door_promo_box.jpg"
-                alt="Door2Door Special Offers Gift Box"
-                style={{
-                  width: '100%',
-                  maxHeight: '220px',
-                  objectFit: 'cover',
-                  borderRadius: '20px',
-                  boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
-                }}
-              />
-            </div>
-          </div>
-        </section>
-
         {/* TAB NAVIGATION & DIRECTORY VIEW (STORES VS MEALS) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
@@ -648,7 +432,7 @@ export default function Door2DoorMarketplaceHomePage() {
 
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
                           <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b' }}>
-                            📍 {r.locations?.[0]?.city || 'Main Branch'}
+                            📍 {r.address}
                           </span>
                           <span style={{ fontSize: '0.88rem', fontWeight: 900, color: '#F95700' }}>
                             Visit Store ›
@@ -750,7 +534,7 @@ export default function Door2DoorMarketplaceHomePage() {
         >
           <button
             type="button"
-            onClick={() => { setActiveTab('restaurants'); setSelectedCategory('Food'); }}
+            onClick={() => setActiveTab('restaurants')}
             style={{
               background: 'none',
               border: 'none',
@@ -830,7 +614,7 @@ export default function Door2DoorMarketplaceHomePage() {
           </Link>
 
           <Link
-            href="/orders"
+            href="/track-order"
             style={{
               textDecoration: 'none',
               display: 'flex',

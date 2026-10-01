@@ -78,7 +78,8 @@ describe('Auth Core Utilities (lib/auth.ts)', () => {
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        roles: ['CUSTOMER'],
+        role: 'SUPER_ADMIN',
+        roles: ['SUPER_ADMIN'],
       };
 
       const pair = await generateTokenPair(mockUser, { userAgent: 'Chrome', ipAddress: '127.0.0.1' });
@@ -123,13 +124,7 @@ describe('Auth Core Utilities (lib/auth.ts)', () => {
           firstName: 'User',
           lastName: 'One',
           isActive: true,
-          userRoles: [
-            {
-              userId: 'user-1',
-              roleId: 'role-1',
-              role: { id: 'role-1', name: 'CUSTOMER' },
-            },
-          ],
+          role: 'SUPER_ADMIN',
         },
       };
 
@@ -170,7 +165,7 @@ describe('Auth Core Utilities (lib/auth.ts)', () => {
         userId: 'user-1',
         expiresAt: new Date(Date.now() + 100000),
         isRevoked: true, // ALREADY REVOKED!
-        user: { id: 'user-1', isActive: true, userRoles: [] },
+        user: { id: 'user-1', isActive: true, role: 'SUPER_ADMIN' },
       } as any);
 
       vi.mocked(db.session.updateMany).mockResolvedValueOnce({ count: 5 } as any);
@@ -271,7 +266,7 @@ describe('Auth Core Utilities (lib/auth.ts)', () => {
 
   describe('requireAuth & requireRole', () => {
     it('should return 401 NextResponse when unauthenticated', async () => {
-      const request = new Request('http://localhost/api/admin/coupons');
+      const request = new Request('http://localhost/api/admin/restaurants');
       const result = await requireAuth(request);
 
       expect(result).toBeInstanceOf(NextResponse);

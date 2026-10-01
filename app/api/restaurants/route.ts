@@ -1,36 +1,21 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
-// GET all active restaurants for Door2Door marketplace directory
 export async function GET() {
   try {
     const restaurants = await db.restaurant.findMany({
       where: { isActive: true },
-      include: {
-        locations: {
-          where: { isActive: true },
-          select: {
-            id: true,
-            name: true,
-            city: true,
-            addressLine1: true,
-            phone: true,
-          },
-        },
-        _count: {
-          select: {
-            menuItems: true,
-            orders: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
+      include: { _count: { select: { products: true, orders: true } } },
+      orderBy: { createdAt: 'asc' },
     });
-
-    return NextResponse.json(restaurants);
-  } catch (error: any) {
+    return NextResponse.json(restaurants.map((restaurant) => ({
+      ...restaurant,
+      deliveryRadiusKm: Number(restaurant.deliveryRadiusKm),
+      minimumOrderAmount: Number(restaurant.minimumOrderAmount),
+      deliveryFee: Number(restaurant.deliveryFee),
+      _count: { ...restaurant._count, menuItems: restaurant._count.products },
+    })));
+  } catch (error) {
     console.error('Fetch restaurants error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

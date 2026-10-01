@@ -2,12 +2,10 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import db from '@/lib/db';
 import { generateTokenPair, setAuthCookies, AuthenticatedUser } from '@/lib/auth';
-import { isAdminPortalAllowed } from '@/lib/rbac';
 
 /**
  * POST /api/auth/admin/login
- * Validates Email + Password authentication for management staff (super_admin, admin, store_manager, kitchen_staff).
- * Strictly prevents customer role accounts from logging in.
+ * Validates the single Super Admin account used by the MVP management portal.
  */
 export async function POST(request: Request) {
   try {
@@ -27,11 +25,6 @@ export async function POST(request: Request) {
     // Look up user account by email in PostgreSQL database
     const user = await db.user.findUnique({
       where: { email: sanitizedEmail },
-      include: {
-        userRoles: {
-          include: { role: true },
-        },
-      },
     });
 
     if (!user || !user.passwordHash) {
@@ -57,14 +50,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Resolve user roles hierarchy
-    const userRoleNames = user.userRoles.map((ur) => ur.role.name.toLowerCase());
-    const primaryRole = user.role?.toLowerCase() || userRoleNames[0] || 'customer';
-
-    // RBAC Security Guard: Ensure user role is permitted to log in via admin portal
-    if (!isAdminPortalAllowed(primaryRole)) {
+    if (user.role.toUpperCase() !== 'SUPER_ADMIN') {
       return NextResponse.json(
-        { error: 'Access forbidden. Customer accounts are not allowed to log in via the management portal.' },
+        { error: 'Access forbidden. Only the Super Admin can use this portal.' },
         { status: 403 }
       );
     }
@@ -75,8 +63,8 @@ export async function POST(request: Request) {
       phone: user.phone,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role || primaryRole,
-      roles: user.userRoles.map((ur) => ur.role.name),
+      role: 'SUPER_ADMIN',
+      roles: ['SUPER_ADMIN'],
     };
 
     // Issue JWT token pair embedding user role in payload

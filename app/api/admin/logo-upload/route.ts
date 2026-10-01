@@ -1,15 +1,13 @@
 import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
-import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
+import { requireRole } from '@/lib/auth';
 import db from '@/lib/db';
 
 export const runtime = 'nodejs';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'oh_richi_fallback_secret_123';
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB limit
-const ADMIN_ROLES = new Set(['ADMIN', 'OWNER', 'MANAGER']);
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -18,45 +16,9 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   'image/gif': 'gif',
 };
 
-function getSessionToken(request: Request) {
-  return (request.headers.get('cookie') || '')
-    .split(';')
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith('session_token='))
-    ?.slice('session_token='.length);
-}
-
 async function requireAdmin(request: Request) {
-  const token = getSessionToken(request);
-  if (!token) {
-    return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-  }
-
-  let userId: string | undefined;
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId?: string };
-    userId = decoded.userId;
-  } catch {
-    return NextResponse.json({ error: 'Session expired or invalid.' }, { status: 401 });
-  }
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Session expired or invalid.' }, { status: 401 });
-  }
-
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    include: { userRoles: { include: { role: true } } },
-  });
-
-  const canManage = user?.isActive
-    && user.userRoles.some(({ role }) => ADMIN_ROLES.has(role.name.toUpperCase()));
-
-  if (!canManage) {
-    return NextResponse.json({ error: 'You do not have permission to manage restaurant settings.' }, { status: 403 });
-  }
-
-  return null;
+  const result = await requireRole(request, ['SUPER_ADMIN']);
+  return result instanceof NextResponse ? result : null;
 }
 
 export async function POST(request: Request) {
@@ -93,10 +55,10 @@ export async function POST(request: Request) {
     // Automatically update restaurant logo in DB if restaurant exists
     const restaurant = await db.restaurant.findFirst();
     if (restaurant) {
-      await db.restaurant.update({
-        where: { id: restaurant.id },
-        data: { logoUrl },
-      });
+      await db.$transaction([
+        db.restaurant.update({ where: { id: restaurant.id }, data: { logoUrl } }),
+        db.media.create({ data: { type: 'image', entityType: 'restaurant_logo', entityId: restaurant.id, url: logoUrl } }),
+      ]);
     }
 
     return NextResponse.json(

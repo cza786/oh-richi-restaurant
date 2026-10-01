@@ -99,23 +99,11 @@ export async function verifySessionToken(request: Request): Promise<Authenticate
     if (!decoded || !decoded.userId) return null;
 
     // Check database to ensure user is active and fetch current roles
-    const user = await db.user.findUnique({
-      where: { id: decoded.userId },
-      include: {
-        userRoles: {
-          include: {
-            role: true,
-          },
-        },
-      },
-    });
+    const user = await db.user.findUnique({ where: { id: decoded.userId } });
 
     if (!user || !user.isActive) return null;
 
-    const roles = user.userRoles.map((ur) => ur.role.name);
-    if (user.role && !roles.includes(user.role)) {
-      roles.push(user.role);
-    }
+    const roles = [user.role];
 
     return {
       id: user.id,
@@ -216,17 +204,7 @@ export async function rotateRefreshToken(
     // Look up session by token hash
     const sessionRecord = await db.session.findUnique({
       where: { tokenHash: incomingHash },
-      include: {
-        user: {
-          include: {
-            userRoles: {
-              include: {
-                role: true,
-              },
-            },
-          },
-        },
-      },
+      include: { user: true },
     });
 
     // --- REUSE DETECTION ---
@@ -255,13 +233,14 @@ export async function rotateRefreshToken(
       },
     });
 
-    const roles = sessionRecord.user.userRoles.map((ur) => ur.role.name);
+    const roles = [sessionRecord.user.role];
 
     const userContext: AuthenticatedUser = {
       id: sessionRecord.user.id,
       email: sessionRecord.user.email,
       firstName: sessionRecord.user.firstName,
       lastName: sessionRecord.user.lastName,
+      role: sessionRecord.user.role,
       roles,
     };
 

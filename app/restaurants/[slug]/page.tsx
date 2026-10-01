@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import CustomerLayout from '../../components/CustomerLayout';
 import { useCart } from '../../components/CartContext';
 
@@ -14,6 +15,7 @@ interface MenuItem {
   imageUrl: string | null;
   basePrice: PriceValue;
   isAvailable?: boolean;
+  options?: Array<{ id: string }>;
   category: { name: string };
 }
 
@@ -23,14 +25,10 @@ interface RestaurantData {
   name: string;
   description: string | null;
   logoUrl: string | null;
-  website: string | null;
-  locations: Array<{
-    id: string;
-    name: string;
-    addressLine1: string;
-    city: string;
-    phone: string | null;
-  }>;
+  coverImageUrl: string | null;
+  address: string;
+  phone: string;
+  whatsapp: string | null;
   menuCategories: Array<{
     id: string;
     name: string;
@@ -45,6 +43,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function RestaurantStorefrontPage({ params }: { params: Promise<{ slug: string }> }) {
+  const router = useRouter();
   const { slug } = use(params);
   const { addToCart, cart } = useCart();
   const cartCount = useMemo(() => cart.reduce((acc, i) => acc + i.quantity, 0), [cart]);
@@ -60,6 +59,10 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
   const [toast, setToast] = useState('');
 
   const addPlainItemToCart = (item: MenuItem) => {
+    if (item.options?.length) {
+      router.push(`/menu/${item.id}`);
+      return;
+    }
     addToCart({
       restaurantId: restaurant?.id,
       itemId: item.id,
@@ -67,10 +70,7 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
       imageUrl: item.imageUrl || null,
       basePrice: Number(item.basePrice),
       quantity: 1,
-      notes: '',
-      variation: null,
-      spiceLevel: null,
-      addons: [],
+      selectedOptions: [],
     });
     setToast(`Added ${item.name} to cart!`);
   };
@@ -173,7 +173,7 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
               }}
             >
               <img
-                src="/pizza_house_store.jpg"
+                src={restaurant.coverImageUrl || '/pizza_house_store.jpg'}
                 alt={restaurant.name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 onError={(e) => { (e.target as HTMLImageElement).src = '/burger_hero.png'; }}
@@ -486,7 +486,7 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
                 <h3 style={{ margin: '0 0 12px 0', fontWeight: 900 }}>About {restaurant.name}</h3>
                 <p style={{ color: '#64748b', lineHeight: '1.6' }}>{restaurant.description}</p>
                 <div style={{ marginTop: '16px', fontWeight: 700, color: '#334155' }}>
-                  📍 Address: {restaurant.locations?.[0]?.addressLine1 || 'Main Branch'}, {restaurant.locations?.[0]?.city || 'New York'}
+                  📍 Address: {restaurant.address}
                 </div>
               </div>
             )}
@@ -535,7 +535,7 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
             </span>
             <span>Cart</span>
           </Link>
-          <Link href="/orders" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#64748b', fontWeight: 800, fontSize: '0.78rem' }}>
+          <Link href="/track-order" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: '#64748b', fontWeight: 800, fontSize: '0.78rem' }}>
             <span style={{ fontSize: '1.3rem' }}>📋</span>
             <span>Orders</span>
           </Link>

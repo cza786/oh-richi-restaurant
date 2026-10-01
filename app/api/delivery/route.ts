@@ -1,106 +1,66 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { requireRole } from '@/lib/auth';
 
-// GET delivery settings & zones
-export async function GET() {
-  try {
-    const settings = await db.deliverySettings.findFirst();
-    const zones = await db.deliveryZone.findMany({
-      orderBy: { name: 'asc' },
-    });
-
-    // Format Decimal fields to numbers
-    const formattedSettings = settings ? {
-      ...settings,
-      minimumOrderAmount: Number(settings.minimumOrderAmount),
-      baseDeliveryFee: Number(settings.baseDeliveryFee),
-      feePerKm: Number(settings.feePerKm),
-      freeDeliveryOver: settings.freeDeliveryOver ? Number(settings.freeDeliveryOver) : null,
-    } : null;
-
-    const formattedZones = zones.map(z => ({
-      ...z,
-      deliveryFee: Number(z.deliveryFee),
-      minimumOrder: Number(z.minimumOrder),
-    }));
-
-    return NextResponse.json({
-      settings: formattedSettings,
-      zones: formattedZones,
-    });
-  } catch (error: any) {
-    console.error('Fetch delivery info error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
-  }
+export async function GET(request: Request) {
+  const authResult = await requireRole(request, ['SUPER_ADMIN']);
+  if (authResult instanceof NextResponse) return authResult;
+  const restaurantId = new URL(request.url).searchParams.get('restaurantId');
+  const restaurant = restaurantId ? await db.restaurant.findUnique({ where: { id: restaurantId } }) : await db.restaurant.findFirst();
+  if (!restaurant) return NextResponse.json({ error: 'Restaurant not found.' }, { status: 404 });
+  const zones = await db.deliveryZone.findMany({ where: { restaurantId: restaurant.id }, orderBy: { name: 'asc' } });
+  return NextResponse.json({
+    settings: {
+      restaurantId: restaurant.id,
+      deliveryRadius: Number(restaurant.deliveryRadiusKm),
+      minimumOrderAmount: Number(restaurant.minimumOrderAmount),
+      baseDeliveryFee: Number(restaurant.deliveryFee),
+    },
+    zones: zones.map((zone) => ({ ...zone, deliveryFee: Number(zone.deliveryFee) })),
+  });
 }
 
-// PUT modify delivery settings or zone exclusions
 export async function PUT(request: Request) {
   try {
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
+    if (authResult instanceof NextResponse) return authResult;
     const body = await request.json();
-    const { action, settingsId, deliveryRadius, minimumOrderAmount, baseDeliveryFee, feePerKm, freeDeliveryOver, zoneId, zoneName, city, postalCode, zoneMinOrder, fixedFee } = body;
 
-    // Check if modifying general settings
-    if (action === 'update_settings') {
-      if (!settingsId) {
-        return NextResponse.json({ error: 'Settings ID is required.' }, { status: 400 });
-      }
-
-      const updated = await db.deliverySettings.update({
-        where: { id: settingsId },
+    if (body.action === 'update_settings') {
+      if (!body.restaurantId) return NextResponse.json({ error: 'Restaurant ID is required.' }, { status: 400 });
+      const restaurant = await db.restaurant.update({
+        where: { id: body.restaurantId },
         data: {
-          deliveryRadius: Number(deliveryRadius),
-          minimumOrderAmount: Number(minimumOrderAmount),
-          baseDeliveryFee: Number(baseDeliveryFee),
-          feePerKm: Number(feePerKm),
-          freeDeliveryOver: freeOverVal(freeDeliveryOver),
+          deliveryRadiusKm: Number(body.deliveryRadius || 0),
+          minimumOrderAmount: Number(body.minimumOrderAmount || 0),
+          deliveryFee: Number(body.baseDeliveryFee || 0),
         },
       });
-
-      return NextResponse.json({ success: true, settings: updated });
+      return NextResponse.json({ success: true, restaurant });
     }
-
-    // Check if adding/modifying zone exceptions
-    if (action === 'create_zone') {
-      const location = await db.restaurantLocation.findFirst();
-      if (!location) {
-        return NextResponse.json({ error: 'No restaurant locations exist.' }, { status: 400 });
-      }
-
-      const newZone = await db.deliveryZone.create({
-        data: {
-          locationId: location.id,
-          name: zoneName || 'New Exception Zone',
-          postalCode: postalCode || '',
-          deliveryFee: Number(fixedFee) || 0,
-          minimumOrder: Number(zoneMinOrder) || 0,
-        },
+    if (body.action === 'create_zone') {
+      if (!body.restaurantId || !body.zoneName?.trim()) return NextResponse.json({ error: 'Restaurant and zone name are required.' }, { status: 400 });
+      const zone = await db.deliveryZone.create({
+        data: { restaurantId: body.restaurantId, name: body.zoneName.trim(), polygon: body.polygon ?? undefined, deliveryFee: Number(body.deliveryFee || 0), isActive: body.isActive !== false },
       });
-
-      return NextResponse.json({ success: true, zone: newZone });
+      return NextResponse.json({ success: true, zone }, { status: 201 });
     }
-
-    if (action === 'delete_zone') {
-      if (!zoneId) {
-        return NextResponse.json({ error: 'Zone ID is required.' }, { status: 400 });
-      }
-
-      await db.deliveryZone.delete({
-        where: { id: zoneId },
+    if (body.action === 'update_zone') {
+      if (!body.zoneId) return NextResponse.json({ error: 'Zone ID is required.' }, { status: 400 });
+      const zone = await db.deliveryZone.update({
+        where: { id: body.zoneId },
+        data: { ...(body.zoneName !== undefined ? { name: body.zoneName.trim() } : {}), ...(body.polygon !== undefined ? { polygon: body.polygon } : {}), ...(body.deliveryFee !== undefined ? { deliveryFee: Number(body.deliveryFee) } : {}), ...(body.isActive !== undefined ? { isActive: Boolean(body.isActive) } : {}) },
       });
-
+      return NextResponse.json({ success: true, zone });
+    }
+    if (body.action === 'delete_zone') {
+      if (!body.zoneId) return NextResponse.json({ error: 'Zone ID is required.' }, { status: 400 });
+      await db.deliveryZone.delete({ where: { id: body.zoneId } });
       return NextResponse.json({ success: true });
     }
-
-    return NextResponse.json({ error: 'Invalid operation action.' }, { status: 400 });
-  } catch (error: any) {
-    console.error('Update delivery settings error:', error);
-    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
+    return NextResponse.json({ error: 'Invalid delivery action.' }, { status: 400 });
+  } catch (error) {
+    console.error('Update delivery error:', error);
+    return NextResponse.json({ error: 'Unable to update delivery configuration.' }, { status: 500 });
   }
-}
-
-// Helper to convert free delivery option
-function freeOverVal(val: any) {
-  if (val === undefined || val === null || val === '') return null;
-  return Number(val);
 }

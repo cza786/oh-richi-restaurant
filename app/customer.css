@@ -333,41 +333,6 @@
   text-decoration: none;
   cursor: pointer;
 }
-.richi-family-card { min-height: 165px; }
-.richi-family-card button { border: 0; background: linear-gradient(135deg, #ffb116, #ff7800); color: #1b0c00; }
-.richi-family-card img,
-.richi-loyalty-card img {
-  position: absolute;
-  z-index: 1;
-  right: -17px;
-  bottom: -12px;
-  width: 125px;
-  height: 125px;
-  object-fit: cover;
-  border-radius: 50%;
-  mix-blend-mode: screen;
-  filter: saturate(1.15) contrast(1.08);
-  pointer-events: none;
-}
-.richi-promo-price { position: relative; z-index: 3; display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-.richi-promo-price strong { color: var(--richi-orange); font-size: 14px; }
-.richi-promo-price del { color: #777; font-size: 8px; }
-.richi-loyalty-card { min-height: 165px; }
-.richi-loyalty-card .richi-points { position: relative; z-index: 2; display: block; color: var(--richi-orange); font-size: 22px; line-height: 1.1; }
-.richi-loyalty-card img { right: -26px; bottom: 7px; width: 116px; height: 116px; opacity: .78; }
-.richi-points-track { position: relative; z-index: 3; width: 104px; height: 4px; margin: 8px 0 4px; overflow: hidden; border-radius: 2px; background: #303232; }
-.richi-points-track span { display: block; width: 78%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ffc21b, #ff7800); }
-.richi-loyalty-card small { position: relative; z-index: 3; color: #8b8c89; font-size: 7px; }
-.richi-booking-card {
-  min-height: 146px;
-  background:
-    linear-gradient(90deg, rgba(10, 11, 11, .97), rgba(10, 11, 11, .68)),
-    radial-gradient(circle at 80% 20%, #3a2411, transparent 65%);
-}
-.richi-booking-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 10px; }
-.richi-booking-fields span { padding: 5px; border: 1px solid #282a2a; border-radius: 4px; background: #151717; color: #b9bab7; font-size: 7px; }
-.richi-booking-fields span:last-child { grid-column: 1 / -1; }
-.richi-booking-card > a { border: 0; background: linear-gradient(135deg, #ffb719, #ff8000); color: #1a0c00; }
 
 .richi-hero {
   position: relative;

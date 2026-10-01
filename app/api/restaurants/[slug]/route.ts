@@ -1,42 +1,46 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params;
-
-    if (!slug) {
-      return NextResponse.json({ error: 'Restaurant slug is required.' }, { status: 400 });
-    }
-
-    const restaurant = await db.restaurant.findUnique({
-      where: { slug: slug.toLowerCase() },
+    const restaurant = await db.restaurant.findFirst({
+      where: { slug: slug.toLowerCase(), isActive: true },
       include: {
-        locations: {
-          where: { isActive: true },
-        },
-        menuCategories: {
+        categories: {
           where: { isActive: true },
           orderBy: { sortOrder: 'asc' },
           include: {
-            menuItems: {
+            products: {
               where: { isActive: true },
+              orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+              include: {
+                images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+                options: { orderBy: { sortOrder: 'asc' }, include: { items: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } } },
+              },
             },
           },
         },
       },
     });
-
-    if (!restaurant) {
-      return NextResponse.json({ error: 'Restaurant not found.' }, { status: 404 });
-    }
-
-    return NextResponse.json(restaurant);
-  } catch (error: any) {
-    console.error('Fetch restaurant by slug error:', error);
+    if (!restaurant) return NextResponse.json({ error: 'Restaurant not found.' }, { status: 404 });
+    const menuCategories = restaurant.categories.map((category) => ({
+      ...category,
+      menuItems: category.products.map((product) => ({
+        ...product,
+        basePrice: Number(product.basePrice),
+        options: product.options.map((option) => ({ ...option, items: option.items.map((item) => ({ ...item, priceDelta: Number(item.priceDelta) })) })),
+      })),
+    }));
+    return NextResponse.json({
+      ...restaurant,
+      deliveryRadiusKm: Number(restaurant.deliveryRadiusKm),
+      minimumOrderAmount: Number(restaurant.minimumOrderAmount),
+      deliveryFee: Number(restaurant.deliveryFee),
+      menuCategories,
+    });
+  } catch (error) {
+    console.error('Fetch restaurant error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

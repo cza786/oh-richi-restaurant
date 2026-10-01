@@ -1,300 +1,250 @@
+import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { awardPointsForOrder, reversePointsForRefund, applyRewardToOrder } from '@/lib/loyaltyService';
-import { extractTokenFromRequest, getJwtSecret } from '@/lib/auth';
 import { createOrderSchema, updateOrderStatusSchema, validateBody } from '@/lib/schemas';
 import { broadcastOrderCreated, broadcastOrderUpdated } from '@/lib/events';
-import jwt from 'jsonwebtoken';
+import { requireRole } from '@/lib/auth';
 
-// GET orders (optional filter by restaurantId or slug)
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['preparing', 'cancelled'],
+  preparing: ['ready', 'cancelled'],
+  ready: ['out_for_delivery', 'cancelled'],
+  out_for_delivery: ['delivered'],
+  delivered: [],
+  cancelled: [],
+};
+
+const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+
+function serializeOrder(order: any) {
+  return {
+    ...order,
+    subTotal: Number(order.subTotal),
+    deliveryFee: Number(order.deliveryFee),
+    totalAmount: Number(order.totalAmount),
+    items: order.items?.map((item: any) => ({
+      ...item,
+      unitPrice: Number(item.unitPrice),
+      totalPrice: Number(item.totalPrice),
+      options: item.options?.map((option: any) => ({ ...option, priceDelta: Number(option.priceDelta) })) || [],
+    })),
+    payments: order.payments?.map((payment: any) => ({ ...payment, amount: Number(payment.amount) })),
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const orderNumber = searchParams.get('orderNumber') || searchParams.get('shortId');
+
+    if (orderNumber) {
+      const order = await db.order.findUnique({
+        where: { orderNumber: orderNumber.trim().toUpperCase() },
+        select: {
+          orderNumber: true,
+          status: true,
+          totalAmount: true,
+          paymentMethod: true,
+          paymentStatus: true,
+          createdAt: true,
+          updatedAt: true,
+          statusHistory: { select: { status: true, note: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
+        },
+      });
+      if (!order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
+      return NextResponse.json({ ...order, shortId: order.orderNumber, totalAmount: Number(order.totalAmount) });
+    }
+
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
+    if (authResult instanceof NextResponse) return authResult;
+
     const restaurantId = searchParams.get('restaurantId');
     const slug = searchParams.get('slug');
-
-    const whereClause: any = {};
-
-    if (restaurantId) {
-      whereClause.restaurantId = restaurantId;
-    } else if (slug) {
-      const restaurant = await db.restaurant.findUnique({
-        where: { slug: slug.toLowerCase() },
-      });
-      if (restaurant) {
-        whereClause.restaurantId = restaurant.id;
-      }
+    let resolvedRestaurantId = restaurantId || undefined;
+    if (!resolvedRestaurantId && slug) {
+      const restaurant = await db.restaurant.findUnique({ where: { slug: slug.toLowerCase() }, select: { id: true } });
+      resolvedRestaurantId = restaurant?.id;
+      if (!resolvedRestaurantId) return NextResponse.json([]);
     }
 
     const orders = await db.order.findMany({
-      where: whereClause,
+      where: resolvedRestaurantId ? { restaurantId: resolvedRestaurantId } : undefined,
       include: {
-        orderItems: {
-          include: {
-            menuItem: true,
-          },
-        },
-        table: true,
+        customer: true,
+        restaurant: { select: { id: true, name: true, slug: true } },
+        items: { include: { options: true } },
+        payments: true,
+        statusHistory: { include: { createdBy: { select: { firstName: true, lastName: true } } }, orderBy: { createdAt: 'asc' } },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    // Format fields for frontend compatibility
-    const formattedOrders = orders.map(order => ({
-      ...order,
-      subtotal: Number(order.subtotal),
-      taxAmount: Number(order.taxAmount),
-      deliveryFee: Number(order.deliveryFee),
-      discountAmount: Number(order.discountAmount),
-      totalAmount: Number(order.totalAmount),
-      orderItems: order.orderItems.map(item => ({
-        ...item,
-        unitPrice: Number(item.unitPrice),
-        subtotal: Number(item.subtotal),
-      })),
-    }));
-
-    return NextResponse.json(formattedOrders);
-  } catch (error: any) {
+    return NextResponse.json(orders.map((order) => ({ ...serializeOrder(order), shortId: order.orderNumber, subtotal: Number(order.subTotal), orderItems: serializeOrder(order).items })));
+  } catch (error) {
     console.error('Fetch orders error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
 
-// PUT update order status (Wrapped in Prisma transaction & Zod Schema Validation)
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
+    const authResult = await requireRole(request, ['SUPER_ADMIN']);
+    if (authResult instanceof NextResponse) return authResult;
 
-    const validationResult = validateBody(updateOrderStatusSchema, body);
-    if (validationResult instanceof NextResponse) {
-      return validationResult;
+    const validationResult = validateBody(updateOrderStatusSchema, await request.json());
+    if (validationResult instanceof NextResponse) return validationResult;
+    const { id, status, paymentStatus, adminNote } = validationResult.data;
+
+    const existing = await db.order.findUnique({ where: { id } });
+    if (!existing) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
+    if (status && status !== existing.status && !STATUS_TRANSITIONS[existing.status]?.includes(status)) {
+      return NextResponse.json({ error: `Order cannot move from ${existing.status} to ${status}.` }, { status: 409 });
     }
 
-    const { id, status, paymentStatus } = validationResult.data;
-
-    const updatedOrder = await db.$transaction(async (tx) => {
-      const dataToUpdate: any = {};
-      if (status !== undefined) dataToUpdate.status = status;
-      if (paymentStatus !== undefined) dataToUpdate.paymentStatus = paymentStatus;
-
+    const updated = await db.$transaction(async (tx) => {
       const order = await tx.order.update({
         where: { id },
-        data: dataToUpdate,
+        data: {
+          ...(status !== undefined ? { status } : {}),
+          ...(paymentStatus !== undefined ? { paymentStatus } : {}),
+          ...(adminNote !== undefined ? { adminNote: adminNote || null } : {}),
+        },
       });
 
-      // Create status change history log in DB
-      if (status) {
+      if (status && status !== existing.status) {
         await tx.orderStatusHistory.create({
-          data: {
-            orderId: id,
-            status: status,
-            notes: 'Updated via manager dashboard POS interface.',
-          },
+          data: { orderId: id, status, note: adminNote || null, createdById: authResult.user.id },
         });
       }
-
+      if (paymentStatus) {
+        await tx.payment.updateMany({ where: { orderId: id }, data: { status: paymentStatus } });
+      }
       return order;
     });
 
-    // Trigger Loyalty actions dynamically
-    if (updatedOrder.status === 'COMPLETED' && updatedOrder.paymentStatus === 'PAID') {
-      await awardPointsForOrder(id);
-    } else if (updatedOrder.status === 'CANCELLED' || updatedOrder.paymentStatus === 'REFUNDED') {
-      await reversePointsForRefund(id);
-    }
-
-    // Broadcast live SSE event to KDS and dashboards
-    broadcastOrderUpdated(updatedOrder);
-
-    return NextResponse.json(updatedOrder);
-  } catch (error: any) {
+    broadcastOrderUpdated(updated);
+    return NextResponse.json({ ...updated, shortId: updated.orderNumber, subtotal: Number(updated.subTotal), deliveryFee: Number(updated.deliveryFee), totalAmount: Number(updated.totalAmount) });
+  } catch (error) {
     console.error('Update order error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
 
-// POST create customer order (Atomic Checkout Transaction & Zod Schema Validation)
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const validationResult = validateBody(createOrderSchema, await request.json());
+    if (validationResult instanceof NextResponse) return validationResult;
+    const input = validationResult.data;
 
-    const validationResult = validateBody(createOrderSchema, body);
-    if (validationResult instanceof NextResponse) {
-      return validationResult;
-    }
+    const restaurant = await db.restaurant.findUnique({ where: { id: input.restaurantId } });
+    if (!restaurant || !restaurant.isActive) return NextResponse.json({ error: 'Restaurant is unavailable.' }, { status: 404 });
+    if (!restaurant.isOpen) return NextResponse.json({ error: 'Restaurant is currently closed.' }, { status: 409 });
 
-    const {
-      locationId,
-      customerId,
-      customerName,
-      customerPhone,
-      customerEmail,
-      tableId,
-      orderType,
-      subtotal,
-      taxAmount,
-      deliveryFee,
-      discountAmount,
-      totalAmount,
-      specialInstructions,
-      deliveryAddress,
-      orderItems,
-      couponCode,
-      redemptionCode,
-    } = validationResult.data;
-
-    // 1. Resolve customerId from session token if present and customerId not provided
-    let resolvedCustomerId = customerId || null;
-    if (!resolvedCustomerId) {
-      const token = extractTokenFromRequest(request);
-      if (token) {
-        try {
-          const secret = getJwtSecret();
-          const decoded = jwt.verify(token, secret) as any;
-          resolvedCustomerId = decoded.userId;
-        } catch (e) {
-          // ignore invalid token for guest checkouts
-        }
-      }
-    }
-
-    // 2. Validate location exists, or use default
-    let targetLocation = null;
-    if (locationId) {
-      targetLocation = await db.restaurantLocation.findUnique({ where: { id: locationId } });
-    }
-    if (!targetLocation) {
-      targetLocation = await db.restaurantLocation.findFirst();
-      if (!targetLocation) {
-        return NextResponse.json({ error: 'No restaurant location configured.' }, { status: 400 });
-      }
-    }
-    const resolvedLocationId = targetLocation.id;
-    const resolvedRestaurantId = validationResult.data.restaurantId || targetLocation.restaurantId;
-
-    // 3. Generate unique shortId
-    let shortId = '';
-    let exists = true;
-    while (exists) {
-      const randNum = Math.floor(10000 + Math.random() * 90000);
-      shortId = `OR-${randNum}`;
-      const existingOrder = await db.order.findUnique({
-        where: { shortId },
-      });
-      if (!existingOrder) {
-        exists = false;
-      }
-    }
-
-    // 4. Create Order & Items inside an atomic transaction
-    const createdOrder = await db.$transaction(async (tx) => {
-      // Create main Order record
-      const order = await tx.order.create({
-        data: {
-          shortId,
-          restaurantId: resolvedRestaurantId,
-          locationId: resolvedLocationId,
-          customerId: resolvedCustomerId,
-          customerName,
-          customerPhone,
-          customerEmail,
-          tableId: tableId || null,
-          orderType,
-          status: 'PENDING',
-          subtotal: Number(subtotal),
-          taxAmount: Number(taxAmount || 0),
-          deliveryFee: Number(deliveryFee || 0),
-          discountAmount: Number(discountAmount || 0),
-          totalAmount: Number(totalAmount),
-          specialInstructions: specialInstructions || null,
-          deliveryAddress: deliveryAddress || null,
-          paymentStatus: 'PAID', // In customer web app, mock card payment success on checkout
-        },
-      });
-
-      // Create Order Items and their Addons
-      if (orderItems && orderItems.length > 0) {
-        for (const item of orderItems) {
-          const orderItem = await tx.orderItem.create({
-            data: {
-              orderId: order.id,
-              itemId: item.itemId,
-              quantity: item.quantity,
-              unitPrice: Number(item.unitPrice),
-              subtotal: Number(item.subtotal),
-              notes: item.notes || null,
-            },
-          });
-        }
-      }
-
-      // If couponCode was applied, create CouponRedemption
-      if (couponCode) {
-        const coupon = await tx.coupon.findUnique({
-          where: { code: couponCode.trim().toUpperCase() },
-        });
-        if (coupon) {
-          await tx.couponRedemption.create({
-            data: {
-              couponId: coupon.id,
-              userId: resolvedCustomerId,
-              orderId: order.id,
-            },
-          });
-
-          // Update coupon usage count
-          await tx.coupon.update({
-            where: { id: coupon.id },
-            data: {
-              currentUsageCount: { increment: 1 },
-            },
-          });
-        }
-      }
-
-
-      // Create status history log
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId: order.id,
-          status: 'PENDING',
-          notes: 'Order placed online by customer.',
-        },
-      });
-
-      return order;
-    });
-
-    // 5. If redemptionCode is present, apply reward to deduct points
-    if (redemptionCode) {
-      try {
-        await applyRewardToOrder(createdOrder.id, redemptionCode);
-      } catch (err) {
-        console.error('Error applying reward redemption in POST order:', err);
-      }
-    }
-
-    // Refresh the order to get the final fields after redemption application
-    const finalOrder = await db.order.findUnique({
-      where: { id: createdOrder.id },
+    const requestedProductIds = [...new Set(input.orderItems.map((item) => item.productId))];
+    const products = await db.menuItem.findMany({
+      where: { id: { in: requestedProductIds }, restaurantId: restaurant.id, isActive: true, isAvailable: true },
       include: {
-        orderItems: {
-          include: {
-            menuItem: true,
-          },
+        images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+        options: {
+          orderBy: { sortOrder: 'asc' },
+          include: { items: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } },
         },
       },
     });
+    if (products.length !== requestedProductIds.length) {
+      return NextResponse.json({ error: 'One or more products are unavailable or belong to another restaurant.' }, { status: 400 });
+    }
 
-    // Broadcast live SSE event to KDS and dashboards
+    const productsById = new Map(products.map((product) => [product.id, product]));
+    const pricedItems: Array<{
+      product: (typeof products)[number]; quantity: number; unitPrice: number; totalPrice: number;
+      selected: Array<{ optionId: string; optionItemId: string; name: string; priceDelta: number }>;
+    }> = [];
+
+    for (const requested of input.orderItems) {
+      const product = productsById.get(requested.productId)!;
+      const selectedIds = new Set(requested.optionItemIds);
+      if (selectedIds.size !== requested.optionItemIds.length) {
+        return NextResponse.json({ error: `Duplicate option selection for ${product.name}.` }, { status: 400 });
+      }
+
+      const selected: Array<{ optionId: string; optionItemId: string; name: string; priceDelta: number }> = [];
+      for (const option of product.options) {
+        const matches = option.items.filter((item) => selectedIds.has(item.id));
+        if (option.isRequired && matches.length !== 1) {
+          return NextResponse.json({ error: `${product.name}: choose one ${option.name}.` }, { status: 400 });
+        }
+        if (matches.length > 1) {
+          return NextResponse.json({ error: `${product.name}: choose only one ${option.name}.` }, { status: 400 });
+        }
+        for (const item of matches) {
+          selected.push({ optionId: option.id, optionItemId: item.id, name: item.name, priceDelta: Number(item.priceDelta) });
+          selectedIds.delete(item.id);
+        }
+      }
+      if (selectedIds.size > 0) return NextResponse.json({ error: `Invalid option selected for ${product.name}.` }, { status: 400 });
+
+      const unitPrice = money(Number(product.basePrice) + selected.reduce((sum, option) => sum + option.priceDelta, 0));
+      pricedItems.push({ product, quantity: requested.quantity, unitPrice, totalPrice: money(unitPrice * requested.quantity), selected });
+    }
+
+    const subTotal = money(pricedItems.reduce((sum, item) => sum + item.totalPrice, 0));
+    if (subTotal < Number(restaurant.minimumOrderAmount)) {
+      return NextResponse.json({ error: `Minimum order amount is ${Number(restaurant.minimumOrderAmount).toFixed(2)}.` }, { status: 400 });
+    }
+    const discountAmount = 0;
+    const deliveryFee = money(Number(restaurant.deliveryFee));
+    const totalAmount = money(subTotal - discountAmount + deliveryFee);
+    const orderNumber = `D2D-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+    const created = await db.$transaction(async (tx) => {
+      const customer = await tx.customer.create({ data: input.customer });
+      const order = await tx.order.create({
+        data: {
+          restaurantId: restaurant.id,
+          customerId: customer.id,
+          orderNumber,
+          status: 'pending',
+          subTotal,
+          deliveryFee,
+          totalAmount,
+          paymentMethod: input.paymentMethod,
+          paymentStatus: 'pending',
+          address: input.customer.address,
+          latitude: input.customer.latitude,
+          longitude: input.customer.longitude,
+          customerNote: input.customerNote || null,
+        },
+      });
+
+      for (const item of pricedItems) {
+        await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            productId: item.product.id,
+            productName: item.product.name,
+            productImage: item.product.images[0]?.imageUrl || item.product.imageUrl,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            totalPrice: item.totalPrice,
+            options: { create: item.selected },
+          },
+        });
+      }
+      await tx.orderStatusHistory.create({ data: { orderId: order.id, status: 'pending', note: 'Guest order placed.' } });
+      await tx.payment.create({ data: { orderId: order.id, method: input.paymentMethod, status: 'pending', amount: totalAmount } });
+      return order;
+    });
+
+    const finalOrder = await db.order.findUnique({
+      where: { id: created.id },
+      include: { customer: true, items: { include: { options: true } }, payments: true, statusHistory: { orderBy: { createdAt: 'asc' } } },
+    });
     broadcastOrderCreated(finalOrder);
-
-    return NextResponse.json(finalOrder);
-  } catch (error: any) {
+    return NextResponse.json({ ...serializeOrder(finalOrder), shortId: orderNumber, subtotal: subTotal, discountAmount }, { status: 201 });
+  } catch (error) {
     console.error('Create order error:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error.' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

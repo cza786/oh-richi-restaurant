@@ -11,11 +11,7 @@ export function proxy(request: NextRequest) {
 
   // 1. Protect Dashboard & Admin Page Routes
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
-    // Exclude signup/login sub-paths if present
-    const isPublicAdminRoute =
-      pathname === '/admin/signup' ||
-      pathname === '/admin/login' ||
-      pathname === '/login';
+    const isPublicAdminRoute = pathname === '/login';
 
     if (!isPublicAdminRoute && !token) {
       const loginUrl = new URL('/login', request.url);
