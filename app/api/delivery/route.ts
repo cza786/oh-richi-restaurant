@@ -1,6 +1,37 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { requireRole } from '@/lib/auth';
+import { isSupportedDeliveryPolygon, resolveDelivery } from '@/lib/delivery';
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    if (!body.restaurantId) return NextResponse.json({ error: 'Restaurant ID is required.' }, { status: 400 });
+    const latitude = Number(body.latitude);
+    const longitude = Number(body.longitude);
+    const coordinates = Number.isFinite(latitude) && Number.isFinite(longitude)
+      ? { latitude, longitude }
+      : null;
+    const restaurant = await db.restaurant.findFirst({
+      where: { id: body.restaurantId, isActive: true },
+      include: { deliveryZones: { where: { isActive: true } } },
+    });
+    if (!restaurant) return NextResponse.json({ error: 'Restaurant not found.' }, { status: 404 });
+    const delivery = resolveDelivery(restaurant.deliveryZones, coordinates, Number(restaurant.deliveryFee));
+    if (!delivery.available) {
+      return NextResponse.json({
+        error: delivery.requiresCoordinates
+          ? 'Location is required for this restaurant.'
+          : 'Location is outside the configured delivery zones.',
+        requiresCoordinates: delivery.requiresCoordinates,
+      }, { status: 400 });
+    }
+    return NextResponse.json({ deliveryFee: delivery.fee, zone: delivery.zone });
+  } catch (error) {
+    console.error('Delivery quote error:', error);
+    return NextResponse.json({ error: 'Unable to calculate delivery.' }, { status: 500 });
+  }
+}
 
 export async function GET(request: Request) {
   const authResult = await requireRole(request, ['SUPER_ADMIN']);
@@ -28,25 +59,36 @@ export async function PUT(request: Request) {
 
     if (body.action === 'update_settings') {
       if (!body.restaurantId) return NextResponse.json({ error: 'Restaurant ID is required.' }, { status: 400 });
+      const deliveryRadiusKm = Number(body.deliveryRadius || 0);
+      const minimumOrderAmount = Number(body.minimumOrderAmount || 0);
+      const deliveryFee = Number(body.baseDeliveryFee || 0);
+      if (![deliveryRadiusKm, minimumOrderAmount, deliveryFee].every((value) => Number.isFinite(value) && value >= 0)) {
+        return NextResponse.json({ error: 'Delivery values must be non-negative numbers.' }, { status: 400 });
+      }
       const restaurant = await db.restaurant.update({
         where: { id: body.restaurantId },
         data: {
-          deliveryRadiusKm: Number(body.deliveryRadius || 0),
-          minimumOrderAmount: Number(body.minimumOrderAmount || 0),
-          deliveryFee: Number(body.baseDeliveryFee || 0),
+          deliveryRadiusKm,
+          minimumOrderAmount,
+          deliveryFee,
         },
       });
       return NextResponse.json({ success: true, restaurant });
     }
     if (body.action === 'create_zone') {
       if (!body.restaurantId || !body.zoneName?.trim()) return NextResponse.json({ error: 'Restaurant and zone name are required.' }, { status: 400 });
+      if (body.polygon != null && !isSupportedDeliveryPolygon(body.polygon)) return NextResponse.json({ error: 'Zone polygon must be valid GeoJSON Polygon or MultiPolygon data.' }, { status: 400 });
+      const deliveryFee = Number(body.deliveryFee || 0);
+      if (!Number.isFinite(deliveryFee) || deliveryFee < 0) return NextResponse.json({ error: 'Delivery fee must be a non-negative number.' }, { status: 400 });
       const zone = await db.deliveryZone.create({
-        data: { restaurantId: body.restaurantId, name: body.zoneName.trim(), polygon: body.polygon ?? undefined, deliveryFee: Number(body.deliveryFee || 0), isActive: body.isActive !== false },
+        data: { restaurantId: body.restaurantId, name: body.zoneName.trim(), polygon: body.polygon ?? undefined, deliveryFee, isActive: body.isActive !== false },
       });
       return NextResponse.json({ success: true, zone }, { status: 201 });
     }
     if (body.action === 'update_zone') {
       if (!body.zoneId) return NextResponse.json({ error: 'Zone ID is required.' }, { status: 400 });
+      if (body.polygon != null && !isSupportedDeliveryPolygon(body.polygon)) return NextResponse.json({ error: 'Zone polygon must be valid GeoJSON Polygon or MultiPolygon data.' }, { status: 400 });
+      if (body.deliveryFee !== undefined && (!Number.isFinite(Number(body.deliveryFee)) || Number(body.deliveryFee) < 0)) return NextResponse.json({ error: 'Delivery fee must be a non-negative number.' }, { status: 400 });
       const zone = await db.deliveryZone.update({
         where: { id: body.zoneId },
         data: { ...(body.zoneName !== undefined ? { name: body.zoneName.trim() } : {}), ...(body.polygon !== undefined ? { polygon: body.polygon } : {}), ...(body.deliveryFee !== undefined ? { deliveryFee: Number(body.deliveryFee) } : {}), ...(body.isActive !== undefined ? { isActive: Boolean(body.isActive) } : {}) },

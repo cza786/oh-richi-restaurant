@@ -73,6 +73,26 @@ describe('Zod Request Body Schema Validation (lib/schemas.ts)', () => {
       const res = result as NextResponse;
       expect(res.status).toBe(400);
     });
+
+    it('should reject online payment until a provider is implemented', () => {
+      const result = validateBody(createOrderSchema, {
+        restaurantId: 'restaurant-1',
+        customer: { name: 'Alice Smith', phone: '+1 555 0100', address: '10 Main Street' },
+        paymentMethod: 'online',
+        orderItems: [{ productId: 'item-1', quantity: 1, optionItemIds: [] }],
+      });
+      expect(result).toBeInstanceOf(NextResponse);
+    });
+
+    it('should require latitude and longitude together', () => {
+      const result = validateBody(createOrderSchema, {
+        restaurantId: 'restaurant-1',
+        customer: { name: 'Alice Smith', phone: '+1 555 0100', address: '10 Main Street', latitude: 24.86 },
+        paymentMethod: 'cod',
+        orderItems: [{ productId: 'item-1', quantity: 1, optionItemIds: [] }],
+      });
+      expect(result).toBeInstanceOf(NextResponse);
+    });
   });
 
   describe('updateOrderStatusSchema', () => {

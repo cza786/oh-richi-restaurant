@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { isWithinOpeningHours } from '@/lib/restaurantHours';
 
 export async function GET(request: Request) {
   try {
@@ -12,14 +13,21 @@ export async function GET(request: Request) {
         take: 10,
       }),
       db.menuItem.findMany({
-        where: { isActive: true, isAvailable: true, restaurant: { isActive: true }, OR: [{ name: { contains: query, mode: 'insensitive' } }, { description: { contains: query, mode: 'insensitive' } }, { category: { name: { contains: query, mode: 'insensitive' } } }] },
-        include: { category: { select: { name: true } }, restaurant: { select: { id: true, name: true, slug: true, logoUrl: true } }, options: { select: { id: true, isRequired: true } } },
+        where: { isActive: true, isAvailable: true, restaurant: { isActive: true }, category: { isActive: true }, OR: [{ name: { contains: query, mode: 'insensitive' } }, { description: { contains: query, mode: 'insensitive' } }, { category: { name: { contains: query, mode: 'insensitive' } } }] },
+        include: { category: { select: { name: true } }, restaurant: { select: { id: true, name: true, slug: true, logoUrl: true, isOpen: true, openingTime: true, closingTime: true } }, options: { select: { id: true, isRequired: true } } },
         take: 20,
       }),
     ]);
     return NextResponse.json({
       restaurants: restaurants.map((restaurant) => ({ ...restaurant, _count: { ...restaurant._count, menuItems: restaurant._count.products } })),
-      products: products.map((product) => ({ ...product, basePrice: Number(product.basePrice) })),
+      products: products.map((product) => ({
+        ...product,
+        basePrice: Number(product.basePrice),
+        restaurant: {
+          ...product.restaurant,
+          acceptingOrders: product.restaurant.isOpen && isWithinOpeningHours(product.restaurant.openingTime, product.restaurant.closingTime),
+        },
+      })),
     });
   } catch (error) {
     console.error('Marketplace search error:', error);

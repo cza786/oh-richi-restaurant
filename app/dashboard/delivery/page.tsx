@@ -35,6 +35,27 @@ export default function DeliveryPage() {
     await fetch('/api/delivery', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_zone', zoneId }) });
     await load();
   };
+  const updateZone = async (item: any) => {
+    const response = await fetch('/api/delivery', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_zone', zoneId: item.id, zoneName: item.name, deliveryFee: Number(item.deliveryFee), polygon: item.polygon, isActive: item.isActive }),
+    });
+    const data = await response.json();
+    setMessage(response.ok ? 'Delivery zone saved.' : data.error || 'Unable to save delivery zone.');
+    if (response.ok) await load();
+  };
+  const editZonePolygon = (index: number) => {
+    const current = zones[index]?.polygon ? JSON.stringify(zones[index].polygon) : '';
+    const input = window.prompt('Enter a GeoJSON Polygon or MultiPolygon. Leave empty to remove it.', current);
+    if (input === null) return;
+    try {
+      const polygon = input.trim() ? JSON.parse(input) : null;
+      setZones((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, polygon } : item));
+    } catch {
+      setMessage('Zone polygon must be valid JSON.');
+    }
+  };
   if (!settings) return <DashboardLayout><div style={{ padding: '40px' }}>Loading delivery settings…</div></DashboardLayout>;
 
   return <DashboardLayout>
@@ -54,6 +75,6 @@ export default function DeliveryPage() {
         <button className="btn btn-primary">Add zone</button>
       </form>
     </div>
-    <div className="dashboard-card" style={{ marginTop: '20px' }}><h2>Delivery zones</h2><div className="pos-table-wrapper"><table className="pos-table"><thead><tr><th>Name</th><th>Fee</th><th>Active</th><th>Action</th></tr></thead><tbody>{zones.map((item) => <tr key={item.id}><td>{item.name}</td><td>€{Number(item.deliveryFee).toFixed(2)}</td><td>{item.isActive ? 'Yes' : 'No'}</td><td><button className="btn btn-secondary" style={{ width: 'auto' }} onClick={() => removeZone(item.id)}>Delete</button></td></tr>)}</tbody></table></div></div>
+    <div className="dashboard-card" style={{ marginTop: '20px' }}><h2>Delivery zones</h2><div className="pos-table-wrapper"><table className="pos-table"><thead><tr><th>Name</th><th>Fee</th><th>Polygon</th><th>Active</th><th>Actions</th></tr></thead><tbody>{zones.map((item, index) => <tr key={item.id}><td><input className="form-input" value={item.name} onChange={(event) => setZones((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, name: event.target.value } : entry))} /></td><td><input className="form-input" type="number" min="0" step="0.01" value={item.deliveryFee} onChange={(event) => setZones((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, deliveryFee: Number(event.target.value) } : entry))} /></td><td><button className="btn btn-secondary" style={{ width: 'auto' }} onClick={() => editZonePolygon(index)}>{item.polygon ? 'Edit polygon' : 'Add polygon'}</button></td><td><input type="checkbox" checked={item.isActive} onChange={(event) => setZones((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, isActive: event.target.checked } : entry))} /></td><td><div style={{ display: 'flex', gap: '8px' }}><button className="btn btn-secondary" style={{ width: 'auto' }} onClick={() => updateZone(item)}>Save</button><button className="btn btn-secondary" style={{ width: 'auto' }} onClick={() => removeZone(item.id)}>Delete</button></div></td></tr>)}</tbody></table></div></div>
   </DashboardLayout>;
 }

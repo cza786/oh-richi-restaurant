@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CustomerLayout from '../components/CustomerLayout';
@@ -26,8 +26,15 @@ export default function CheckoutPage() {
   const [address, setAddressState] = useState(deliveryAddress || '');
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [customerNotes, setCustomerNotes] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
+  const [quotedDeliveryFee, setQuotedDeliveryFee] = useState(deliveryFee);
+  const [requiresLocation, setRequiresLocation] = useState(false);
+  const [deliveryBlocked, setDeliveryBlocked] = useState(false);
+  const [deliveryMessage, setDeliveryMessage] = useState('');
+  const [locating, setLocating] = useState(false);
 
   // Keep address synchronized with context
   const setAddress = (val: string) => {
@@ -35,10 +42,63 @@ export default function CheckoutPage() {
     setDeliveryAddress(val);
   };
 
-  const totalAmount = cartSubtotal + deliveryFee;
+  const resolvedRestaurantId = restaurantId || cart[0]?.restaurantId;
+  const totalAmount = cartSubtotal + quotedDeliveryFee;
+
+  useEffect(() => { setQuotedDeliveryFee(deliveryFee); }, [deliveryFee]);
+
+  useEffect(() => {
+    if (!resolvedRestaurantId) return;
+    const hasCoordinates = latitude !== '' && longitude !== '';
+    const controller = new AbortController();
+    fetch('/api/delivery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        restaurantId: resolvedRestaurantId,
+        ...(hasCoordinates ? { latitude: Number(latitude), longitude: Number(longitude) } : {}),
+      }),
+      signal: controller.signal,
+    }).then(async (response) => {
+      const data = await response.json();
+      if (response.ok) {
+        setQuotedDeliveryFee(Number(data.deliveryFee));
+        setRequiresLocation(false);
+        setDeliveryBlocked(false);
+        setDeliveryMessage(data.zone ? `Delivery zone: ${data.zone.name}` : 'Standard restaurant delivery');
+      } else if (data.requiresCoordinates) {
+        setRequiresLocation(true);
+        setDeliveryBlocked(true);
+        setDeliveryMessage('Share your location to verify that this address is deliverable.');
+      } else if (hasCoordinates) {
+        setRequiresLocation(true);
+        setDeliveryBlocked(true);
+        setDeliveryMessage(data.error || 'This location is outside the delivery area.');
+      }
+    }).catch((error) => {
+      if (error?.name !== 'AbortError') setDeliveryMessage('Unable to verify delivery right now.');
+    });
+    return () => controller.abort();
+  }, [resolvedRestaurantId, latitude, longitude]);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) return setDeliveryMessage('Location is not supported by this browser.');
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(String(position.coords.latitude));
+        setLongitude(String(position.coords.longitude));
+        setLocating(false);
+      },
+      () => {
+        setDeliveryMessage('Location permission was denied. You can enter coordinates manually.');
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   const handlePlaceOrder = async () => {
-    const resolvedRestaurantId = restaurantId || cart[0]?.restaurantId;
     if (cart.length === 0 || !resolvedRestaurantId) {
       alert('Your cart is empty.');
       return;
@@ -51,6 +111,15 @@ export default function CheckoutPage() {
 
     if (!address) {
       alert('Please provide a delivery address.');
+      return;
+    }
+
+    if (requiresLocation && (!latitude || !longitude)) {
+      alert('Please share your delivery location so we can verify the delivery zone.');
+      return;
+    }
+    if (deliveryBlocked) {
+      alert(deliveryMessage || 'This location is not available for delivery.');
       return;
     }
 
@@ -70,8 +139,11 @@ export default function CheckoutPage() {
           phone,
           whatsapp: whatsapp || null,
           address: [address, city, postalCode].filter(Boolean).join(', '),
+          latitude: latitude ? Number(latitude) : null,
+          longitude: longitude ? Number(longitude) : null,
+          notes: customerNotes || null,
         },
-        paymentMethod,
+        paymentMethod: 'cod',
         customerNote: orderNotes || null,
         orderItems: orderItemsPayload,
       };
@@ -182,6 +254,23 @@ export default function CheckoutPage() {
             </div>
 
             <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b' }}>Delivery Location {requiresLocation ? '(Required)' : '(Optional)'}</label>
+                <button type="button" className="btn btn-secondary" style={{ width: 'auto', padding: '8px 12px' }} onClick={useCurrentLocation} disabled={locating}>{locating ? 'Locating…' : 'Use current location'}</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <input className="form-input" type="number" min="-90" max="90" step="any" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="Latitude" />
+                <input className="form-input" type="number" min="-180" max="180" step="any" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="Longitude" />
+              </div>
+              {deliveryMessage && <small style={{ display: 'block', marginTop: '8px', color: deliveryMessage.includes('outside') ? '#dc2626' : '#64748b' }}>{deliveryMessage}</small>}
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#64748b', marginBottom: '6px' }}>Guest Notes (Optional)</label>
+              <input className="form-input" type="text" value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} placeholder="Delivery preferences for this guest" />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#64748b', marginBottom: '6px' }}>WhatsApp (Optional)</label>
               <input className="form-input" type="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} />
             </div>
@@ -264,11 +353,7 @@ export default function CheckoutPage() {
 
             <div className="form-group" style={{ marginTop: '16px' }}>
               <label className="form-label">Payment method</label>
-              <select className="form-input" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as 'cod' | 'online')}>
-                <option value="cod">Cash on delivery</option>
-                <option value="online">Online payment</option>
-              </select>
-              {paymentMethod === 'online' && <small style={{ color: '#64748b' }}>Payment remains pending until a payment provider confirms it.</small>}
+              <input className="form-input" value="Cash on delivery" readOnly />
             </div>
           </section>
 
@@ -305,11 +390,11 @@ export default function CheckoutPage() {
                     <div style={{ flex: 1 }}>
                       <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 900, color: '#0f172a' }}>{item.name}</h4>
                       <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748b' }}>
-                        {item.quantity} x ${Number(item.unitPrice).toFixed(2)}
+                        {item.quantity} × €{Number(item.unitPrice).toFixed(2)}
                       </span>
                     </div>
                     <strong style={{ fontSize: '1rem', fontWeight: 900, color: '#0f172a' }}>
-                      ${(Number(item.unitPrice) * item.quantity).toFixed(2)}
+                      €{(Number(item.unitPrice) * item.quantity).toFixed(2)}
                     </strong>
                   </div>
                 ))
@@ -320,15 +405,15 @@ export default function CheckoutPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#64748b', fontWeight: 700 }}>
                 <span>Subtotal</span>
-                <span>${cartSubtotal.toFixed(2)}</span>
+                <span>€{cartSubtotal.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#64748b', fontWeight: 700 }}>
                 <span>Delivery Fee</span>
-                <span>${deliveryFee.toFixed(2)}</span>
+                <span>€{quotedDeliveryFee.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', color: '#0f172a', fontWeight: 900, paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
                 <span>Total</span>
-                <span style={{ color: '#F95700' }}>${totalAmount.toFixed(2)}</span>
+                <span style={{ color: '#F95700' }}>€{totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </section>
@@ -373,7 +458,7 @@ export default function CheckoutPage() {
             >
               <span>🛍️ Place Order</span>
               <span>•</span>
-              <span>${totalAmount.toFixed(2)}</span>
+              <span>€{totalAmount.toFixed(2)}</span>
             </button>
           </div>
         </div>

@@ -29,6 +29,12 @@ interface RestaurantData {
   address: string;
   phone: string;
   whatsapp: string | null;
+  isOpen: boolean;
+  acceptingOrders: boolean;
+  openingTime: string | null;
+  closingTime: string | null;
+  deliveryFee: number;
+  minimumOrderAmount: number;
   menuCategories: Array<{
     id: string;
     name: string;
@@ -53,12 +59,15 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [activeTab, setActiveTab] = useState<'menu' | 'info' | 'reviews'>('menu');
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [activeTab, setActiveTab] = useState<'menu' | 'info'>('menu');
 
   const [toast, setToast] = useState('');
 
   const addPlainItemToCart = (item: MenuItem) => {
+    if (!restaurant?.acceptingOrders) {
+      setToast('This restaurant is currently closed.');
+      return;
+    }
     if (item.options?.length) {
       router.push(`/menu/${item.id}`);
       return;
@@ -206,39 +215,6 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
                 >
                   ←
                 </Link>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsFavorite(!isFavorite)}
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.9)',
-                      border: 'none',
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '50%',
-                      cursor: 'pointer',
-                      fontSize: '1.1rem',
-                      color: isFavorite ? '#ef4444' : '#64748b',
-                    }}
-                  >
-                    ♥
-                  </button>
-                  <button
-                    type="button"
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.9)',
-                      border: 'none',
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '50%',
-                      cursor: 'pointer',
-                      fontSize: '1.1rem',
-                      color: '#0f172a',
-                    }}
-                  >
-                    •••
-                  </button>
-                </div>
               </div>
             </div>
 
@@ -285,15 +261,15 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
                   {restaurant.name}
                 </h1>
                 <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 700, color: '#64748b' }}>
-                  Fast Food • Restaurant
+                  {restaurant.description || 'Marketplace restaurant'}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.85rem', fontWeight: 800, color: '#334155' }}>
-                  <span style={{ color: '#f59e0b' }}>★ 4.5 (1.2k reviews)</span>
-                  <span>⏱ 30 min</span>
-                  <span>🛵 $2.00 delivery</span>
+                  <span>Delivery €{Number(restaurant.deliveryFee).toFixed(2)}</span>
+                  <span>Minimum €{Number(restaurant.minimumOrderAmount).toFixed(2)}</span>
                 </div>
-                <div style={{ marginTop: '8px', fontSize: '0.8rem', fontWeight: 800, color: '#16a34a' }}>
-                  🟢 Open Now • Closes at 11:00 PM
+                <div style={{ marginTop: '8px', fontSize: '0.8rem', fontWeight: 800, color: restaurant.acceptingOrders ? '#16a34a' : '#dc2626' }}>
+                  {restaurant.acceptingOrders ? 'Open now' : 'Closed'}
+                  {restaurant.openingTime && restaurant.closingTime ? ` · ${restaurant.openingTime}–${restaurant.closingTime}` : ''}
                 </div>
               </div>
             </div>
@@ -333,23 +309,6 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
                 }}
               >
                 Info
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('reviews')}
-                style={{
-                  flex: 1,
-                  padding: '12px 0',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === 'reviews' ? '3px solid #F95700' : 'none',
-                  color: activeTab === 'reviews' ? '#F95700' : '#64748b',
-                  fontWeight: 900,
-                  fontSize: '0.98rem',
-                  cursor: 'pointer',
-                }}
-              >
-                Reviews
               </button>
             </div>
 
@@ -491,12 +450,6 @@ export default function RestaurantStorefrontPage({ params }: { params: Promise<{
               </div>
             )}
 
-            {activeTab === 'reviews' && (
-              <div style={{ backgroundColor: '#ffffff', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-                <h3 style={{ margin: '0 0 12px 0', fontWeight: 900 }}>Customer Reviews</h3>
-                <p style={{ color: '#f59e0b', fontWeight: 900, fontSize: '1.2rem' }}>★ 4.5 out of 5 stars (1,240 reviews)</p>
-              </div>
-            )}
           </>
         )}
 

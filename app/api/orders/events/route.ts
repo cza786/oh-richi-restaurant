@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { subscribeToOrderEvents, OrderEventPayload } from '@/lib/events';
+import { requireRole } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  const authResult = await requireRole(request, ['SUPER_ADMIN']);
+  if (authResult instanceof NextResponse) return authResult;
   const encoder = new TextEncoder();
 
   const customReadable = new ReadableStream({

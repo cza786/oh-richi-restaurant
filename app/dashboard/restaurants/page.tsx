@@ -28,6 +28,18 @@ export default function RestaurantsPage() {
     setEditing(null);
     await load();
   };
+  const uploadImage = async (file: File, field: 'logoUrl' | 'coverImageUrl') => {
+    const formData = new FormData();
+    formData.set('image', file);
+    if (editing.id) formData.set('restaurantId', editing.id);
+    if (field === 'coverImageUrl') formData.set('entityType', 'restaurant_cover');
+    if (field === 'coverImageUrl' && editing.id) formData.set('entityId', editing.id);
+    const endpoint = field === 'logoUrl' ? '/api/admin/logo-upload' : '/api/admin/menu-images';
+    const response = await fetch(endpoint, { method: 'POST', body: formData });
+    const data = await response.json();
+    if (!response.ok) return setError(data.error || 'Unable to upload image.');
+    setEditing((current: any) => ({ ...current, [field]: data.logoUrl || data.imageUrl }));
+  };
 
   return <DashboardLayout>
     <div className="flex-between" style={{ marginBottom: '24px' }}><div><h1 className="heading-bebas" style={{ fontSize: '2.4rem' }}>Restaurants</h1><p style={{ color: 'var(--text-muted)' }}>Manage each tenant and its delivery configuration.</p></div><button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setEditing({ ...emptyRestaurant })}>Add restaurant</button></div>
@@ -49,6 +61,8 @@ export default function RestaurantsPage() {
         <label className="form-group"><span className="form-label">Delivery fee</span><input className="form-input" type="number" min="0" step="0.01" value={editing.deliveryFee} onChange={(event) => setEditing({ ...editing, deliveryFee: event.target.value })} /></label>
         <label className="form-group"><span className="form-label">Logo URL</span><input className="form-input" value={editing.logoUrl || ''} onChange={(event) => setEditing({ ...editing, logoUrl: event.target.value })} /></label>
         <label className="form-group"><span className="form-label">Cover image URL</span><input className="form-input" value={editing.coverImageUrl || ''} onChange={(event) => setEditing({ ...editing, coverImageUrl: event.target.value })} /></label>
+        <label className="form-group"><span className="form-label">Upload logo</span><input className="form-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file, 'logoUrl'); }} /></label>
+        <label className="form-group"><span className="form-label">Upload cover</span><input className="form-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file, 'coverImageUrl'); }} /></label>
       </div>
       <label className="form-group"><span className="form-label">Address</span><input className="form-input" value={editing.address} onChange={(event) => setEditing({ ...editing, address: event.target.value })} required /></label>
       <label className="form-group"><span className="form-label">Description</span><textarea className="form-input" value={editing.description || ''} onChange={(event) => setEditing({ ...editing, description: event.target.value })} /></label>

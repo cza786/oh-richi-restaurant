@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { productSchema, validateBody } from '@/lib/schemas';
+import { isWithinOpeningHours } from '@/lib/restaurantHours';
 
 const productInclude = {
   category: true,
-  restaurant: { select: { id: true, name: true, slug: true } },
+  restaurant: { select: { id: true, name: true, slug: true, isOpen: true, openingTime: true, closingTime: true } },
   images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }] },
   options: { orderBy: { sortOrder: 'asc' as const }, include: { items: { where: { isActive: true }, orderBy: { sortOrder: 'asc' as const } } } },
 };
@@ -14,6 +15,10 @@ function serializeProduct(product: any) {
   return {
     ...product,
     basePrice: Number(product.basePrice),
+    restaurant: product.restaurant ? {
+      ...product.restaurant,
+      acceptingOrders: product.restaurant.isOpen && isWithinOpeningHours(product.restaurant.openingTime, product.restaurant.closingTime),
+    } : product.restaurant,
     options: product.options?.map((option: any) => ({
       ...option,
       items: option.items.map((item: any) => ({ ...item, priceDelta: Number(item.priceDelta) })),
@@ -36,14 +41,14 @@ export async function GET(request: Request) {
 
     if (id) {
       const product = await db.menuItem.findFirst({
-        where: { id, isActive: true, restaurant: { isActive: true }, ...(resolvedRestaurantId ? { restaurantId: resolvedRestaurantId } : {}) },
+        where: { id, isActive: true, isAvailable: true, restaurant: { isActive: true }, category: { isActive: true }, ...(resolvedRestaurantId ? { restaurantId: resolvedRestaurantId } : {}) },
         include: productInclude,
       });
       return product ? NextResponse.json(serializeProduct(product)) : NextResponse.json({ error: 'Product not found.' }, { status: 404 });
     }
 
     const products = await db.menuItem.findMany({
-      where: { isActive: true, restaurant: { isActive: true }, ...(resolvedRestaurantId ? { restaurantId: resolvedRestaurantId } : {}) },
+      where: { isActive: true, isAvailable: true, restaurant: { isActive: true }, category: { isActive: true }, ...(resolvedRestaurantId ? { restaurantId: resolvedRestaurantId } : {}) },
       include: productInclude,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
@@ -102,23 +107,34 @@ export async function PUT(request: Request) {
 
     const existing = await db.menuItem.findUnique({ where: { id: body.id }, include: { options: { include: { items: true } }, images: true } });
     if (!existing) return NextResponse.json({ error: 'Product not found.' }, { status: 404 });
+    const validation = validateBody(productSchema, body);
+    if (validation instanceof NextResponse) return validation;
+    const input = validation.data;
 
-    const restaurantId = body.restaurantId ?? existing.restaurantId;
-    const categoryId = body.categoryId ?? existing.categoryId;
+    const restaurantId = input.restaurantId;
+    const categoryId = input.categoryId;
     const category = await db.menuCategory.findFirst({ where: { id: categoryId, restaurantId } });
     if (!category) return NextResponse.json({ error: 'Category does not belong to this restaurant.' }, { status: 400 });
     const existingImageIds = new Set(existing.images.map((image) => image.id));
-    if (Array.isArray(body.images) && body.images.some((image: any) => image.id && !existingImageIds.has(image.id))) {
+    if (input.images.some((image) => image.id && !existingImageIds.has(image.id))) {
       return NextResponse.json({ error: 'An image does not belong to this product.' }, { status: 400 });
     }
     const existingOptions = new Map(existing.options.map((option) => [option.id, option]));
-    if (Array.isArray(body.options)) {
-      for (const option of body.options) {
+    {
+      for (const option of input.options) {
         if (option.id && !existingOptions.has(option.id)) return NextResponse.json({ error: 'An option does not belong to this product.' }, { status: 400 });
         const currentOption = option.id ? existingOptions.get(option.id) : undefined;
         const existingItemIds = new Set((currentOption?.items || []).map((item) => item.id));
         if ((option.items || []).some((item: any) => item.id && !existingItemIds.has(item.id))) {
           return NextResponse.json({ error: 'An option item does not belong to this product option.' }, { status: 400 });
+        }
+      }
+      const retainedOptionIds = new Set(input.options.map((option) => option.id).filter((id): id is string => Boolean(id)));
+      const removedOptionIds = existing.options.map((option) => option.id).filter((id) => !retainedOptionIds.has(id));
+      if (removedOptionIds.length > 0) {
+        const historicalSelections = await db.orderItemOption.count({ where: { optionId: { in: removedOptionIds } } });
+        if (historicalSelections > 0) {
+          return NextResponse.json({ error: 'An option used by an existing order cannot be removed. Keep it for order history.' }, { status: 409 });
         }
       }
     }
@@ -129,28 +145,32 @@ export async function PUT(request: Request) {
         data: {
           restaurantId,
           categoryId,
-          ...(body.name !== undefined ? { name: String(body.name).trim() } : {}),
-          ...(body.description !== undefined ? { description: body.description?.trim() || null } : {}),
-          ...(body.imageUrl !== undefined ? { imageUrl: body.imageUrl?.trim() || null } : {}),
-          ...(body.basePrice !== undefined ? { basePrice: Number(body.basePrice) } : {}),
-          ...(body.sortOrder !== undefined ? { sortOrder: Number(body.sortOrder) } : {}),
-          ...(body.isAvailable !== undefined ? { isAvailable: Boolean(body.isAvailable) } : {}),
-          ...(body.isActive !== undefined ? { isActive: Boolean(body.isActive) } : {}),
+          name: input.name,
+          description: input.description || null,
+          imageUrl: input.imageUrl || null,
+          basePrice: input.basePrice,
+          sortOrder: input.sortOrder,
+          isAvailable: input.isAvailable,
+          isActive: input.isActive,
         },
       });
 
-      if (Array.isArray(body.images)) {
-        const retainedIds = body.images.map((image: any) => image.id).filter(Boolean);
+      {
+        const retainedIds = input.images.map((image) => image.id).filter((id): id is string => Boolean(id));
         await tx.productImage.deleteMany({ where: { productId: existing.id, ...(retainedIds.length ? { id: { notIn: retainedIds } } : {}) } });
-        for (const image of body.images) {
+        for (const image of input.images) {
           const data = { imageUrl: String(image.imageUrl).trim(), isPrimary: Boolean(image.isPrimary), sortOrder: Number(image.sortOrder || 0) };
           if (image.id) await tx.productImage.update({ where: { id: image.id }, data });
           else await tx.productImage.create({ data: { productId: existing.id, ...data } });
         }
       }
 
-      if (Array.isArray(body.options)) {
-        for (const option of body.options) {
+      {
+        const retainedOptionIds = input.options.map((option) => option.id).filter((id): id is string => Boolean(id));
+        await tx.productOption.deleteMany({
+          where: { productId: existing.id, ...(retainedOptionIds.length ? { id: { notIn: retainedOptionIds } } : {}) },
+        });
+        for (const option of input.options) {
           const optionData = { name: String(option.name).trim(), isRequired: Boolean(option.isRequired), sortOrder: Number(option.sortOrder || 0) };
           const savedOption = option.id
             ? await tx.productOption.update({ where: { id: option.id }, data: optionData })

@@ -25,9 +25,12 @@ export const createOrderSchema = z.object({
     longitude: z.number().finite().min(-180).max(180).optional().nullable(),
     notes: z.string().trim().max(1000).optional().nullable(),
   }),
-  paymentMethod: z.enum(['cod', 'online']).default('cod'),
+  paymentMethod: z.literal('cod').default('cod'),
   customerNote: z.string().trim().max(1000).optional().nullable(),
   orderItems: z.array(orderItemSchema).min(1).max(100),
+}).refine((value) => (value.customer.latitude == null) === (value.customer.longitude == null), {
+  path: ['customer', 'latitude'],
+  message: 'Latitude and longitude must be provided together.',
 });
 
 export const updateOrderStatusSchema = z.object({
@@ -82,6 +85,9 @@ export const productSchema = z.object({
   isActive: z.boolean().default(true),
   options: z.array(productOptionInputSchema).default([]),
   images: z.array(productImageInputSchema).default([]),
+}).refine((value) => value.images.filter((image) => image.isPrimary).length <= 1, {
+  path: ['images'],
+  message: 'Only one product image can be primary.',
 });
 
 export function validateBody<T>(schema: z.ZodSchema<T>, data: unknown): { data: T } | NextResponse {

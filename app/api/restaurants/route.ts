@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { isWithinOpeningHours } from '@/lib/restaurantHours';
 
 export async function GET() {
   try {
@@ -13,6 +14,7 @@ export async function GET() {
       deliveryRadiusKm: Number(restaurant.deliveryRadiusKm),
       minimumOrderAmount: Number(restaurant.minimumOrderAmount),
       deliveryFee: Number(restaurant.deliveryFee),
+      acceptingOrders: restaurant.isOpen && isWithinOpeningHours(restaurant.openingTime, restaurant.closingTime),
       _count: { ...restaurant._count, menuItems: restaurant._count.products },
     })));
   } catch (error) {

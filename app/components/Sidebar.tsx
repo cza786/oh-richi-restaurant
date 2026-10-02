@@ -15,10 +15,13 @@ const modules = [
   { name: 'Dashboard', path: '/dashboard' },
   { name: 'Restaurants', path: '/dashboard/restaurants' },
   { name: 'Orders', path: '/dashboard/orders' },
+  { name: 'Guest Customers', path: '/dashboard/customers' },
   { name: 'Kitchen KDS', path: '/dashboard/kds' },
   { name: 'Menu Management', path: '/dashboard/menu' },
   { name: 'Delivery & Zones', path: '/dashboard/delivery' },
   { name: 'Payments', path: '/dashboard/payments' },
+  { name: 'Users', path: '/dashboard/users' },
+  { name: 'Media', path: '/dashboard/media' },
   { name: 'Settings', path: '/dashboard/settings' },
 ];
 

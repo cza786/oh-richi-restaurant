@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { isWithinOpeningHours } from '@/lib/restaurantHours';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -12,7 +13,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
           orderBy: { sortOrder: 'asc' },
           include: {
             products: {
-              where: { isActive: true },
+              where: { isActive: true, isAvailable: true },
               orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
               include: {
                 images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
@@ -37,6 +38,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
       deliveryRadiusKm: Number(restaurant.deliveryRadiusKm),
       minimumOrderAmount: Number(restaurant.minimumOrderAmount),
       deliveryFee: Number(restaurant.deliveryFee),
+      acceptingOrders: restaurant.isOpen && isWithinOpeningHours(restaurant.openingTime, restaurant.closingTime),
       menuCategories,
     });
   } catch (error) {

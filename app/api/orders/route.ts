@@ -4,6 +4,8 @@ import db from '@/lib/db';
 import { createOrderSchema, updateOrderStatusSchema, validateBody } from '@/lib/schemas';
 import { broadcastOrderCreated, broadcastOrderUpdated } from '@/lib/events';
 import { requireRole } from '@/lib/auth';
+import { resolveDelivery } from '@/lib/delivery';
+import { isWithinOpeningHours } from '@/lib/restaurantHours';
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -137,13 +139,31 @@ export async function POST(request: Request) {
     if (validationResult instanceof NextResponse) return validationResult;
     const input = validationResult.data;
 
-    const restaurant = await db.restaurant.findUnique({ where: { id: input.restaurantId } });
+    const restaurant = await db.restaurant.findUnique({
+      where: { id: input.restaurantId },
+      include: { deliveryZones: { where: { isActive: true } } },
+    });
     if (!restaurant || !restaurant.isActive) return NextResponse.json({ error: 'Restaurant is unavailable.' }, { status: 404 });
     if (!restaurant.isOpen) return NextResponse.json({ error: 'Restaurant is currently closed.' }, { status: 409 });
+    if (!isWithinOpeningHours(restaurant.openingTime, restaurant.closingTime)) {
+      return NextResponse.json({ error: 'Restaurant is outside its opening hours.' }, { status: 409 });
+    }
+
+    const coordinates = input.customer.latitude != null && input.customer.longitude != null
+      ? { latitude: input.customer.latitude, longitude: input.customer.longitude }
+      : null;
+    const delivery = resolveDelivery(restaurant.deliveryZones, coordinates, Number(restaurant.deliveryFee));
+    if (!delivery.available) {
+      return NextResponse.json({
+        error: delivery.requiresCoordinates
+          ? 'Your location is required to select a delivery zone.'
+          : 'This address is outside the configured delivery zones.',
+      }, { status: 400 });
+    }
 
     const requestedProductIds = [...new Set(input.orderItems.map((item) => item.productId))];
     const products = await db.menuItem.findMany({
-      where: { id: { in: requestedProductIds }, restaurantId: restaurant.id, isActive: true, isAvailable: true },
+      where: { id: { in: requestedProductIds }, restaurantId: restaurant.id, isActive: true, isAvailable: true, category: { isActive: true } },
       include: {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
         options: {
@@ -194,7 +214,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Minimum order amount is ${Number(restaurant.minimumOrderAmount).toFixed(2)}.` }, { status: 400 });
     }
     const discountAmount = 0;
-    const deliveryFee = money(Number(restaurant.deliveryFee));
+    const deliveryFee = money(delivery.fee);
     const totalAmount = money(subTotal - discountAmount + deliveryFee);
     const orderNumber = `D2D-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${randomUUID().slice(0, 8).toUpperCase()}`;
 
@@ -242,7 +262,13 @@ export async function POST(request: Request) {
       include: { customer: true, items: { include: { options: true } }, payments: true, statusHistory: { orderBy: { createdAt: 'asc' } } },
     });
     broadcastOrderCreated(finalOrder);
-    return NextResponse.json({ ...serializeOrder(finalOrder), shortId: orderNumber, subtotal: subTotal, discountAmount }, { status: 201 });
+    return NextResponse.json({
+      ...serializeOrder(finalOrder),
+      shortId: orderNumber,
+      subtotal: subTotal,
+      discountAmount,
+      deliveryZone: delivery.zone,
+    }, { status: 201 });
   } catch (error) {
     console.error('Create order error:', error);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });

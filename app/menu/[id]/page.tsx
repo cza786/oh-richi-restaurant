@@ -30,6 +30,10 @@ export default function ProductPage() {
   if (!product) return <CustomerLayout><div style={{ padding: '60px 24px', textAlign: 'center' }}>Loading product…</div></CustomerLayout>;
 
   const add = () => {
+    if (product.restaurant?.acceptingOrders === false) {
+      setError('This restaurant is currently closed.');
+      return;
+    }
     const missing = product.options.find((option: any) => option.isRequired && !selected[option.id]);
     if (missing) {
       setError(`Choose one ${missing.name}.`);

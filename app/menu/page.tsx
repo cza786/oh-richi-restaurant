@@ -11,6 +11,10 @@ export default function MenuPage() {
   const [query, setQuery] = useState('');
   useEffect(() => { fetch('/api/menu').then(async (response) => { if (response.ok) setItems(await response.json()); }); }, []);
   const visible = useMemo(() => items.filter((item) => item.isAvailable !== false && `${item.name} ${item.description || ''}`.toLowerCase().includes(query.toLowerCase())), [items, query]);
+  const addItem = (item: any) => {
+    if (item.restaurant?.acceptingOrders === false) return window.alert('This restaurant is currently closed.');
+    addToCart({ restaurantId: item.restaurantId, itemId: item.id, name: item.name, imageUrl: item.images?.[0]?.imageUrl || item.imageUrl, basePrice: Number(item.basePrice), quantity: 1, selectedOptions: [] });
+  };
 
   return <CustomerLayout><div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px' }}>
     <div className="flex-between" style={{ marginBottom: '24px' }}><div><h1>Menu</h1><p>Products available for guest checkout.</p></div><input className="form-input" style={{ maxWidth: '280px' }} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products" /></div>
@@ -20,7 +24,7 @@ export default function MenuPage() {
       <div className="flex-between" style={{ marginTop: '16px' }}><strong>€{Number(item.basePrice).toFixed(2)}</strong>
         {item.options?.length
           ? <Link href={`/menu/${item.id}`} className="btn btn-primary" style={{ width: 'auto' }}>Choose options</Link>
-          : <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => addToCart({ restaurantId: item.restaurantId, itemId: item.id, name: item.name, imageUrl: item.images?.[0]?.imageUrl || item.imageUrl, basePrice: Number(item.basePrice), quantity: 1, selectedOptions: [] })}>Add</button>}
+          : <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => addItem(item)}>Add</button>}
       </div>
     </article>)}</div>
   </div></CustomerLayout>;

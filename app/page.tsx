@@ -14,6 +14,7 @@ interface Restaurant {
   description: string | null;
   logoUrl: string | null;
   address: string;
+  acceptingOrders: boolean;
   _count?: {
     menuItems: number;
   };
@@ -33,6 +34,7 @@ interface MenuItem {
     name: string;
     slug: string;
     logoUrl: string | null;
+    acceptingOrders?: boolean;
   };
 }
 
@@ -62,6 +64,10 @@ export default function Door2DoorMarketplaceHomePage() {
   const [toast, setToast] = useState('');
 
   const addPlainProductToCart = (item: MenuItem) => {
+    if (item.restaurant?.acceptingOrders === false) {
+      setToast('This restaurant is currently closed.');
+      return;
+    }
     if (item.options?.length) {
       router.push(`/menu/${item.id}`);
       return;
@@ -376,7 +382,7 @@ export default function Door2DoorMarketplaceHomePage() {
                   gap: '24px',
                 }}
               >
-                {filteredRestaurants.map((r, index) => (
+                {filteredRestaurants.map((r) => (
                   <Link
                     href={`/restaurants/${r.slug}`}
                     key={r.id}
@@ -416,7 +422,7 @@ export default function Door2DoorMarketplaceHomePage() {
                             boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
                           }}
                         >
-                          ★ {(4.8 - (index % 3) * 0.1).toFixed(1)}
+                          {r.acceptingOrders ? 'Open' : 'Closed'}
                         </span>
                       </div>
 

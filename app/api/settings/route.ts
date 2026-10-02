@@ -63,6 +63,8 @@ export async function PUT(request: Request) {
         },
       });
       if (Array.isArray(body.platformSettings)) {
+        const keys = body.platformSettings.map((setting: any) => String(setting.key || '').trim()).filter(Boolean);
+        await tx.setting.deleteMany({ where: keys.length ? { key: { notIn: keys } } : {} });
         for (const setting of body.platformSettings) {
           const key = String(setting.key || '').trim();
           if (!key) continue;

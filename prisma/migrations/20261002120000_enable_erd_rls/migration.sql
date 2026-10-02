@@ -1,0 +1,24 @@
+-- Deny direct Supabase anon/authenticated access to application tables.
+-- The server-side Prisma database role remains responsible for authorization.
+
+ALTER TABLE "users" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "sessions" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "restaurants" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "menu_categories" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "menu_items" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "product_options" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "option_items" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "product_images" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "customers" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "orders" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "order_items" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "order_item_options" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "order_status_history" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "delivery_zones" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "payments" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "settings" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "media" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_role_check";
+ALTER TABLE "users" ADD CONSTRAINT "users_role_check" CHECK ("role" = 'SUPER_ADMIN');
+
