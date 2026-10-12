@@ -9,6 +9,12 @@ import { generateTokenPair, setAuthCookies, AuthenticatedUser } from '@/lib/auth
  */
 export async function POST(request: Request) {
   try {
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        { error: 'The application database is not configured. Add DATABASE_URL and DIRECT_URL, apply migrations, then seed the admin account.' },
+        { status: 503 },
+      );
+    }
     const body = await request.json();
     const { email, password } = body;
 
@@ -87,9 +93,11 @@ export async function POST(request: Request) {
     return setAuthCookies(response, tokenPair.accessToken, tokenPair.refreshToken);
   } catch (error: any) {
     console.error('Error in admin login API:', error);
+    const isDatabaseError = error?.name?.startsWith?.('PrismaClient')
+      || ['P1000', 'P1001', 'P1002', 'P1003'].includes(error?.code);
     return NextResponse.json(
-      { error: 'An unexpected authentication error occurred.' },
-      { status: 500 }
+      { error: isDatabaseError ? 'The application database is unavailable. Check DATABASE_URL and confirm PostgreSQL is running.' : 'An unexpected authentication error occurred.' },
+      { status: isDatabaseError ? 503 : 500 }
     );
   }
 }
